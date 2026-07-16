@@ -23,14 +23,13 @@ export async function uploadToCloudinary(blob, publicId, creds, signal) {
   const formData = new FormData();
   formData.append('file', blob, `${publicId}.jpg`);
   formData.append('public_id', publicId);
-  formData.append('overwrite', 'true');
-  formData.append('folder', '');           // public_id already includes folder path
 
   // Unsigned upload (requires upload_preset)
   if (uploadPreset) {
     formData.append('upload_preset', uploadPreset);
   } else if (apiKey && apiSecret) {
     // Signed upload via API key + secret
+    formData.append('overwrite', 'true');
     const timestamp   = Math.round(Date.now() / 1000);
     const signature   = await generateSignature({ public_id: publicId, timestamp, overwrite: true }, apiSecret);
     formData.append('api_key',   apiKey);
