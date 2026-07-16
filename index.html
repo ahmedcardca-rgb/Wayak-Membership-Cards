@@ -173,7 +173,7 @@
             </div>
           </div>
 
-          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:var(--sp-md);">
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:var(--sp-md); margin-bottom:var(--sp-md);">
             <div class="field-group">
               <label class="field-label" for="cloud-name">Cloud Name <span style="color:var(--clr-error)">*</span></label>
               <input type="text" id="cloud-name" placeholder="مثال: my-cloud-name" autocomplete="off" />
@@ -198,6 +198,11 @@
                 <input type="password" id="api-secret" placeholder="أدخل API Secret" autocomplete="off" />
                 <button class="toggle-vis" data-target="api-secret" title="تبديل الرؤية" aria-label="تبديل رؤية API Secret">👁️</button>
               </div>
+            </div>
+
+            <div class="field-group">
+              <label class="field-label" for="custom-domain">نطاق مخصص / Custom Domain (اختياري)</label>
+              <input type="text" id="custom-domain" placeholder="مثال: wayakcard.com" autocomplete="off" />
             </div>
           </div>
 

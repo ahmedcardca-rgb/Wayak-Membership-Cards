@@ -60,7 +60,21 @@ export async function uploadToCloudinary(blob, publicId, creds, signal) {
     throw new Error(`Cloudinary error: ${msg}`);
   }
 
-  return json.secure_url;
+  let finalUrl = json.secure_url;
+  if (finalUrl) {
+    // Strip version segment (e.g. /v1784192981/) to shorten the URL
+    finalUrl = finalUrl.replace(/\/v\d+\//, '/');
+
+    // Apply custom domain if provided
+    if (creds.customDomain) {
+      let cleanDomain = creds.customDomain.trim();
+      cleanDomain = cleanDomain.replace(/^(https?:\/\/)?(www\.)?/, ''); // remove http://, https://, www.
+      cleanDomain = cleanDomain.replace(/\/+$/, ''); // remove trailing slashes
+      finalUrl = `https://${cleanDomain}/cards/${publicId.split('/').pop()}.jpg`;
+    }
+  }
+
+  return finalUrl;
 }
 
 /**

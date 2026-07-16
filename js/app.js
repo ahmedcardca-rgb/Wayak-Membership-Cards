@@ -63,6 +63,7 @@ function loadPersistedSettings() {
     setVal('upload-preset',  savedCreds.uploadPreset || '');
     setVal('api-key',        savedCreds.apiKey       || '');
     setVal('api-secret',     savedCreds.apiSecret    || '');
+    setVal('custom-domain',  savedCreds.customDomain || '');
     showSavedBadge('cloudinary-saved-badge');
   }
 
@@ -382,6 +383,7 @@ function saveCloudinarySettings() {
     uploadPreset: getVal('upload-preset').trim(),
     apiKey:       getVal('api-key').trim(),
     apiSecret:    getVal('api-secret').trim(),
+    customDomain: getVal('custom-domain').trim(),
   };
 
   if (!creds.cloudName) {
