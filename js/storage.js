@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   FONT:       'mcg_font',
   THEME:      'mcg_theme',
   BATCH_SIZE: 'mcg_batch_size',
+  SHORTIO:    'mcg_shortio',
 };
 
 export const Storage = {
@@ -101,5 +102,24 @@ export const Storage = {
   loadBatchSize() {
     const val = localStorage.getItem(STORAGE_KEYS.BATCH_SIZE);
     return val ? parseInt(val, 10) : 50;
+  },
+
+  /**
+   * Save Short.io credentials
+   * @param {{ apiKey: string, domain: string }} data
+   */
+  saveShortio(data) {
+    localStorage.setItem(STORAGE_KEYS.SHORTIO, JSON.stringify(data));
+  },
+
+  /**
+   * Load Short.io credentials
+   * @returns {{ apiKey: string, domain: string } | null}
+   */
+  loadShortio() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEYS.SHORTIO);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
   },
 };

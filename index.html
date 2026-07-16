@@ -214,6 +214,43 @@
               سيتم رفع كافة بطاقات العضوية داخل مجلد سحابي باسم: <code dir="ltr" style="background:var(--clr-surface-2); padding:2px 6px; border-radius:4px;">cards/&lt;Member_ID&gt;.jpg</code>
             </span>
           </div>
+
+          <div class="divider"></div>
+
+          <div class="section-header" style="margin-bottom:var(--sp-md);">
+            <div class="step-badge" style="background:var(--grad-primary);">🔗</div>
+            <div>
+              <div class="section-title">تقصير الروابط تلقائياً باستخدام Short.io (اختياري)</div>
+              <div class="section-subtitle">قم بربط حساب Short.io لتقصير روابط الكروت وتوليدها باسم نطاقك المختصر</div>
+            </div>
+            <div style="margin-right:auto; margin-left:0;">
+              <span id="shortio-saved-badge" class="badge badge-saved hidden">✓ تم الحفظ</span>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:var(--sp-md); margin-bottom:var(--sp-md);">
+            <div class="field-group">
+              <label class="field-label" for="shortio-key">Short.io API Key (Secret Key)</label>
+              <div class="input-wrapper">
+                <input type="password" id="shortio-key" placeholder="أدخل API Key الخاص بـ Short.io" autocomplete="off" />
+                <button class="toggle-vis" data-target="shortio-key" title="تبديل الرؤية" aria-label="تبديل رؤية API Key لـ Short.io">👁️</button>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label class="field-label" for="shortio-domain">Short.io Domain / النطاق المختصر</label>
+              <input type="text" id="shortio-domain" placeholder="مثال: wayakcard.s.gy" autocomplete="off" />
+            </div>
+          </div>
+
+          <div style="display:flex; gap:var(--sp-md); align-items:center; flex-wrap:wrap;">
+            <button id="save-shortio" class="btn btn-secondary">
+              💾 حفظ إعدادات Short.io
+            </button>
+            <span class="text-muted" style="font-size:0.8rem;">
+              سيقوم التطبيق تلقائياً بتقصير كل رابط كارت يرتفع على Cloudinary وإضافة الرابط المختصر في شيت Excel النهائي.
+            </span>
+          </div>
         </div>
 
         <!-- ── STEP 4: Card Layout Settings (الخطوة 4: التخطيط والخطوط) ── -->

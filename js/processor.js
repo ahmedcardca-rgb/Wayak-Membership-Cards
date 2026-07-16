@@ -14,6 +14,7 @@
 import { drawCard, canvasToBlob }         from './canvas.js';
 import { uploadToCloudinary, buildPublicId } from './cloudinary.js';
 import { yieldToBrowser }                  from './ui.js';
+import { shortenUrl }                      from './shortener.js';
 
 /**
  * @typedef {Object} ProcessorOptions
@@ -23,6 +24,7 @@ import { yieldToBrowser }                  from './ui.js';
  * @property {Object}            layout       - Card layout settings
  * @property {Object}            font         - Font settings
  * @property {Object}            cloudinaryCreds - Cloudinary credentials
+ * @property {Object=}           shortioCreds - Short.io credentials (optional)
  * @property {number}            batchSize    - Cards per batch (default 50)
  * @property {HTMLCanvasElement} canvas       - Reusable canvas element
  * @property {Function}          onProgress   - (stats) => void
@@ -43,6 +45,7 @@ export async function processAllCards(opts) {
     layout,
     font,
     cloudinaryCreds,
+    shortioCreds,
     batchSize = 50,
     canvas,
     onProgress,
@@ -101,11 +104,23 @@ export async function processAllCards(opts) {
 
         // ── Step 3: Upload to Cloudinary ──
         const publicId = buildPublicId(memberId);
-        const url      = await uploadToCloudinary(blob, publicId, cloudinaryCreds, signal);
-
-        urlMap.set(memberId, url);
+        let url        = await uploadToCloudinary(blob, publicId, cloudinaryCreds, signal);
         stats.uploaded++;
         onLog('SUCCESS', `Uploaded: ${name} → ${url}`, { member: name });
+
+        // ── Step 4: Shorten URL via Short.io (Optional) ──
+        if (shortioCreds && shortioCreds.apiKey && shortioCreds.domain) {
+          try {
+            onLog('INFO', `Shortening URL for: ${name} via Short.io…`);
+            const shortUrl = await shortenUrl(url, shortioCreds, signal);
+            url = shortUrl;
+            onLog('SUCCESS', `Shortened: ${name} → ${url}`, { member: name });
+          } catch (shortErr) {
+            onLog('WARN', `Shortening failed for: ${name} — ${shortErr.message || shortErr}. Using Cloudinary URL instead.`, { member: name });
+          }
+        }
+
+        urlMap.set(memberId, url);
 
       } catch (err) {
         stats.failed++;

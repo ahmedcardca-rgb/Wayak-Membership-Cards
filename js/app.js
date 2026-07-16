@@ -83,6 +83,15 @@ function loadPersistedSettings() {
 
   // Batch size
   setVal('batch-size', Storage.loadBatchSize());
+
+  // Short.io
+  const savedShortio = Storage.loadShortio();
+  if (savedShortio) {
+    state.shortioCreds = savedShortio;
+    setVal('shortio-key',    savedShortio.apiKey || '');
+    setVal('shortio-domain', savedShortio.domain || '');
+    showSavedBadge('shortio-saved-badge');
+  }
 }
 
 function showSavedBadge(id) {
@@ -177,6 +186,9 @@ function bindEvents() {
 
   // ── Step 3: Cloudinary Save ──
   document.getElementById('save-cloudinary')?.addEventListener('click', saveCloudinarySettings);
+
+  // ── Step 3.5: Short.io Save ──
+  document.getElementById('save-shortio')?.addEventListener('click', saveShortioSettings);
 
   // ── Step 4: Layout & Font Preview ──
   document.getElementById('preview-card')?.addEventListener('click', updatePreview);
@@ -403,6 +415,24 @@ function saveCloudinarySettings() {
   showToast('Cloudinary settings saved ✓', 'success');
 }
 
+// ── Save Short.io Settings ────────────────────────────────────────────
+function saveShortioSettings() {
+  const creds = {
+    apiKey: getVal('shortio-key').trim(),
+    domain: getVal('shortio-domain').trim(),
+  };
+
+  if (!creds.apiKey || !creds.domain) {
+    showToast('Both API Key and Domain are required for Short.io', 'error');
+    return;
+  }
+
+  state.shortioCreds = creds;
+  Storage.saveShortio(creds);
+  showSavedBadge('shortio-saved-badge');
+  showToast('Short.io settings saved ✓', 'success');
+}
+
 // ── Update Card Preview ───────────────────────────────────────────────
 function updatePreview() {
   const previewCanvas      = document.getElementById('preview-canvas');
@@ -507,6 +537,12 @@ async function startGeneration() {
   logger.info(`Total members: ${total}`);
   logger.info(`Batch size: ${Storage.loadBatchSize()}`);
   logger.info(`Cloudinary: ${state.cloudinaryCreds.cloudName} / cards/<Member_ID>`);
+  
+  if (state.shortioCreds && state.shortioCreds.apiKey && state.shortioCreds.domain) {
+    logger.info(`Short.io: Active (Domain: ${state.shortioCreds.domain})`);
+  } else {
+    logger.info(`Short.io: Inactive`);
+  }
 
   try {
     const batchSize = parseInt(getVal('batch-size'), 10) || 50;
@@ -518,6 +554,7 @@ async function startGeneration() {
       layout:          state.layout,
       font:            state.font,
       cloudinaryCreds: state.cloudinaryCreds,
+      shortioCreds:    state.shortioCreds,
       batchSize,
       canvas:          workCanvas,
       signal:          state.abortController.signal,
