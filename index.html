@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="نظام توليد بطاقات العضوية جماعياً — ارفع ملف Excel، ولد الكروت، وارفعها مباشرة إلى Cloudinary." />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Card Generator Pro — نظام إنشاء بطاقات العضوية جماعياً</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cairo:wght@300;400;500;600;700;800&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
+
+  <!-- SheetJS (Excel) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/animations.css" />
+
+  <!-- Inline Style Override for RTL consistency -->
+  <style>
+    /* Adjustments for RTL */
+    body {
+      font-family: var(--font-arabic);
+      text-align: right;
+    }
+    .step-badge {
+      margin-left: 0;
+      margin-right: 0;
+    }
+    .section-header {
+      gap: var(--sp-md);
+    }
+    .toggle-track {
+      direction: ltr; /* keep track sliding consistent */
+    }
+    .input-wrapper input {
+      padding-right: var(--sp-md);
+      padding-left: 42px;
+    }
+    .toggle-vis {
+      right: auto;
+      left: 12px;
+    }
+    .toast-container {
+      right: auto;
+      left: 24px;
+    }
+    @keyframes slideInToast {
+      from { transform: translateX(-100%) scale(0.9); opacity: 0; }
+      to   { transform: translateX(0) scale(1); opacity: 1; }
+    }
+    @keyframes slideOutToast {
+      to { transform: translateX(-100%) scale(0.9); opacity: 0; }
+    }
+  </style>
+
+  <!-- Hidden work canvas -->
+  <canvas id="work-canvas" style="display:none;"></canvas>
+</head>
+<body>
+<div class="app-wrapper">
+
+  <!-- ═══════════════════════════════════════════════════
+       HEADER (الهيدر)
+  ═══════════════════════════════════════════════════ -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="header-logo">
+        <div class="header-logo-icon">🪪</div>
+        <div>
+          <span class="header-logo-text">Card Generator Pro</span>
+          <span class="header-logo-sub">نظام إنشاء بطاقات العضوية جماعياً</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a href="#help-section" class="btn btn-secondary btn-sm" style="text-decoration:none">
+          📖 تعليمات الاستخدام
+        </a>
+        <button id="theme-toggle" class="btn btn-secondary btn-icon" title="تبديل المظهر">☀️</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════
+       HERO (مقدمة الصفحة)
+  ═══════════════════════════════════════════════════ -->
+  <section class="hero-section">
+    <div class="hero-badge">✨ جاهز للعمل بالكامل - Production Ready</div>
+    <h1 class="hero-title">إنشاء وتوليد أكثر من 5,000 بطاقة عضوية<br/>في دقائق معدودة</h1>
+    <p class="hero-subtitle">
+      ارفع قالب الكارت وملف Excel الخاص بك، وقم بتهيئة الإعدادات مرة واحدة، وسيقوم النظام تلقائياً بإنشاء الكروت ورفعها واستخراج روابطها المباشرة.
+    </p>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════
+       MAIN CONTENT (المحتوى الرئيسي)
+  ═══════════════════════════════════════════════════ -->
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Steps Grid -->
+      <div class="steps-grid">
+
+        <!-- ── STEP 1: Template (الخطوة 1: قالب الكارت) ── -->
+        <div class="section-card" data-step="1" id="step1-card">
+          <div class="section-header">
+            <div class="step-badge">١</div>
+            <div>
+              <div class="section-title">قالب الكارت (Template)</div>
+              <div class="section-subtitle">ارفع الصورة الخلفية للبطاقة</div>
+            </div>
+          </div>
+
+          <div class="drop-zone" id="template-dropzone" role="button" tabindex="0" aria-label="رفع قالب الكارت">
+            <input type="file" id="template-input" accept="image/*" aria-label="اختر قالب الكارت" />
+            <span class="drop-zone-icon">🖼️</span>
+            <span class="drop-zone-text">اسحب وأفلت قالب الكارت هنا (Drag &amp; Drop)</span>
+            <span class="drop-zone-subtext">أو اضغط للتصفح من جهازك — يدعم JPG, PNG, WebP</span>
+          </div>
+        </div>
+
+        <!-- ── STEP 2: Excel (الخطوة 2: ملف البيانات) ── -->
+        <div class="section-card" data-step="2" id="step2-card">
+          <div class="section-header">
+            <div class="step-badge">٢</div>
+            <div>
+              <div class="section-title">بيانات المشتركين (Excel)</div>
+              <div class="section-subtitle">ارفع ملف البيانات المشتمل على أعمدة الاسم والبيانات</div>
+            </div>
+          </div>
+
+          <div class="drop-zone" id="excel-dropzone" role="button" tabindex="0" aria-label="رفع ملف Excel">
+            <input type="file" id="excel-input" accept=".xlsx,.xls" aria-label="اختر ملف Excel" />
+            <span class="drop-zone-icon">📊</span>
+            <span class="drop-zone-text">اسحب وأفلت ملف Excel هنا (Drag &amp; Drop)</span>
+            <span class="drop-zone-subtext">أو اضغط للتصفح من جهازك — يدعم .xlsx أو .xls</span>
+          </div>
+
+          <button id="download-template" class="btn btn-secondary btn-sm" style="width:100%; margin-top:var(--sp-sm); font-weight:700;">
+            📥 تحميل نموذج ملف Excel فارغ للعمل عليه
+          </button>
+
+          <div class="alert alert-info mt-md" style="font-size:0.8rem;">
+            <span>💡</span>
+            <span>الأعمدة الأساسية المطلوبة: <strong>Name</strong>، <strong>Member_ID</strong>، <strong>Expiry</strong>.
+            يتم الاحتفاظ بأي أعمدة أخرى كما هي دون تعديل. يتم التعرف على الأعمدة تلقائياً.</span>
+          </div>
+        </div>
+
+        <!-- ── STEP 3: Cloudinary (الخطوة 3: إعدادات السحابة) ── -->
+        <div class="section-card full-width" data-step="3" id="step3-card">
+          <div class="section-header">
+            <div class="step-badge">٣</div>
+            <div>
+              <div class="section-title">إعدادات سحابة Cloudinary</div>
+              <div class="section-subtitle">تُحفظ الإعدادات تلقائياً في المتصفح لاستخدامها لاحقاً</div>
+            </div>
+            <div style="margin-right:auto; margin-left:0;">
+              <span id="cloudinary-saved-badge" class="badge badge-saved hidden">✓ تم الحفظ</span>
+            </div>
+          </div>
+
+          <div class="alert alert-warning" style="margin-bottom:var(--sp-lg); font-size:0.82rem;">
+            <span>⚠️</span>
+            <div>
+              <strong>طريقتان للربط والمزامنة:</strong><br/>
+              <strong>الطريقة الأولى (مستحسن لغير المبرمجين):</strong> أدخل Cloud Name و Upload Preset (قم بإنشاء preset من نوع <em>Unsigned</em> في إعدادات Cloudinary لفتح الرفع دون أكواد التشفير).<br/>
+              <strong>الطريقة الثانية:</strong> أدخل Cloud Name و API Key و API Secret للرفع المشفر والموثق.
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:var(--sp-md);">
+            <div class="field-group">
+              <label class="field-label" for="cloud-name">Cloud Name <span style="color:var(--clr-error)">*</span></label>
+              <input type="text" id="cloud-name" placeholder="مثال: my-cloud-name" autocomplete="off" />
+            </div>
+
+            <div class="field-group">
+              <label class="field-label" for="upload-preset">Upload Preset (الطريقة الأولى)</label>
+              <input type="text" id="upload-preset" placeholder="مثال: cards_preset" autocomplete="off" />
+            </div>
+
+            <div class="field-group">
+              <label class="field-label" for="api-key">API Key (الطريقة الثانية)</label>
+              <div class="input-wrapper">
+                <input type="text" id="api-key" placeholder="أدخل API Key" autocomplete="off" />
+                <button class="toggle-vis" data-target="api-key" title="تبديل الرؤية" aria-label="تبديل رؤية API Key">👁️</button>
+              </div>
+            </div>
+
+            <div class="field-group">
+              <label class="field-label" for="api-secret">API Secret (الطريقة الثانية)</label>
+              <div class="input-wrapper">
+                <input type="password" id="api-secret" placeholder="أدخل API Secret" autocomplete="off" />
+                <button class="toggle-vis" data-target="api-secret" title="تبديل الرؤية" aria-label="تبديل رؤية API Secret">👁️</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:var(--sp-md); align-items:center; flex-wrap:wrap;">
+            <button id="save-cloudinary" class="btn btn-primary">
+              💾 حفظ إعدادات Cloudinary
+            </button>
+            <span class="text-muted" style="font-size:0.8rem;">
+              سيتم رفع كافة بطاقات العضوية داخل مجلد سحابي باسم: <code dir="ltr" style="background:var(--clr-surface-2); padding:2px 6px; border-radius:4px;">cards/&lt;Member_ID&gt;.jpg</code>
+            </span>
+          </div>
+        </div>
+
+        <!-- ── STEP 4: Card Layout Settings (الخطوة 4: التخطيط والخطوط) ── -->
+        <div class="section-card full-width" data-step="4" id="step4-card">
+          <div class="section-header">
+            <div class="step-badge">٤</div>
+            <div>
+              <div class="section-title">إعدادات الخط والمسافات (Layout &amp; Font)</div>
+              <div class="section-subtitle">حدد إحداثيات النصوص، الألوان، وأنواع الخطوط لكل حقل بدقة وبدون تعديل الكود</div>
+            </div>
+            <div style="margin-right:auto; margin-left:0;">
+              <span id="settings-saved-badge" class="badge badge-saved hidden">✓ تم الحفظ</span>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:var(--sp-xl);">
+
+            <!-- Coordinates Panel -->
+            <div>
+              <h3 style="font-size:0.9rem; font-weight:700; color:var(--clr-text-muted); margin-bottom:var(--sp-md); text-transform:uppercase; letter-spacing:0.5px;">
+                📍 إحداثيات موقع النصوص (بالبكسل من الزاوية العلوية اليسرى)
+              </h3>
+
+              <!-- Name -->
+              <div style="background:var(--clr-surface-2); border:1px solid var(--clr-border); border-radius:var(--radius-md); padding:var(--sp-md); margin-bottom:var(--sp-md);">
+                <div style="font-size:0.82rem; font-weight:700; color:var(--clr-primary); margin-bottom:var(--sp-sm);">👤 حقل الاسم (Name)</div>
+                <div class="field-row">
+                  <div class="field-group" style="margin-bottom:0">
+                    <label class="field-label" for="name-x">المحور الأفقي X (بكسل)</label>
+                    <input type="number" id="name-x" value="0" min="0" max="9999" />
+                  </div>
+                  <div class="field-group" style="margin-bottom:0">
+                    <label class="field-label" for="name-y">المحور الرأسي Y (بكسل)</label>
+                    <input type="number" id="name-y" value="200" min="0" max="9999" />
+                  </div>
+                </div>
+                <div class="field-group mt-sm" style="margin-bottom:0">
+                  <label class="field-label" for="name-align">محاذاة النص</label>
+                  <select id="name-align">
+                    <option value="left">يسار (Left)</option>
+                    <option value="center" selected>توسيط (Center)</option>
+                    <option value="right">يمين (Right)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Member ID -->
+              <div style="background:var(--clr-surface-2); border:1px solid var(--clr-border); border-radius:var(--radius-md); padding:var(--sp-md); margin-bottom:var(--sp-md);">
+                <div style="font-size:0.82rem; font-weight:700; color:var(--clr-accent); margin-bottom:var(--sp-sm);">🪪 رقم العضوية (Member_ID)</div>
+                <div class="field-row">
+                  <div class="field-group" style="margin-bottom:0">
+                    <label class="field-label" for="member-x">المحور الأفقي X (بكسل)</label>
+                    <input type="number" id="member-x" value="0" min="0" max="9999" />
+                  </div>
+                  <div class="field-group" style="margin-bottom:0">
+                    <label class="field-label" for="member-y">المحور الرأسي Y (بكسل)</label>
+                    <input type="number" id="member-y" value="260" min="0" max="9999" />
+                  </div>
+                </div>
+                <div class="field-group mt-sm" style="margin-bottom:0">
+                  <label class="field-label" for="member-align">محاذاة النص</label>
+                  <select id="member-align">
+                    <option value="left">يسار (Left)</option>
+                    <option value="center" selected>توسيط (Center)</option>
+                    <option value="right">يمين (Right)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Expiry -->
+              <div style="background:var(--clr-surface-2); border:1px solid var(--clr-border); border-radius:var(--radius-md); padding:var(--sp-md);">
+                <div style="font-size:0.82rem; font-weight:700; color:var(--clr-warning); margin-bottom:var(--sp-sm);">📅 تاريخ الانتهاء (Expiry)</div>
+                <div class="field-row">
+                  <div class="field-group" style="margin-bottom:0">
+                    <label class="field-label" for="expiry-x">المحور الأفقي X (بكسل)</label>
+                    <input type="number" id="expiry-x" value="0" min="0" max="9999" />
+                  </div>
+                  <div class="field-group" style="margin-bottom:0">
+                    <label class="field-label" for="expiry-y">المحور الرأسي Y (بكسل)</label>
+                    <input type="number" id="expiry-y" value="320" min="0" max="9999" />
+                  </div>
+                </div>
+                <div class="field-group mt-sm" style="margin-bottom:0">
+                  <label class="field-label" for="expiry-align">محاذاة النص</label>
+                  <select id="expiry-align">
+                    <option value="left">يسار (Left)</option>
+                    <option value="center" selected>توسيط (Center)</option>
+                    <option value="right">يمين (Right)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Styles & Preview Panel -->
+            <div>
+              <h3 style="font-size:0.9rem; font-weight:700; color:var(--clr-text-muted); margin-bottom:var(--sp-md); text-transform:uppercase; letter-spacing:0.5px;">
+                🔤 نوع الخط والمظهر العام
+              </h3>
+
+              <div style="background:var(--clr-surface-2); border:1px solid var(--clr-border); border-radius:var(--radius-md); padding:var(--sp-md); margin-bottom:var(--sp-md);">
+                <div class="field-row">
+                  <div class="field-group">
+                    <label class="field-label" for="font-family">نوع الخط (Font Family)</label>
+                    <select id="font-family">
+                      <option value="Cairo" selected>خط القاهرة (Cairo - للعربية)</option>
+                      <option value="Tajawal">خط تجول (Tajawal - للعربية)</option>
+                      <option value="Arial">Arial</option>
+                      <option value="Times New Roman">Times New Roman</option>
+                      <option value="Georgia">Georgia</option>
+                      <option value="Verdana">Verdana</option>
+                      <option value="Trebuchet MS">Trebuchet MS</option>
+                      <option value="Impact">Impact</option>
+                      <option value="Courier New">Courier New</option>
+                    </select>
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label" for="font-size">حجم الخط (بكسل)</label>
+                    <input type="number" id="font-size" value="28" min="8" max="200" />
+                  </div>
+                </div>
+
+                <div class="field-group">
+                  <label class="field-label" for="font-color">لون النص</label>
+                  <div style="display:flex; gap:var(--sp-sm); align-items:center;">
+                    <input type="color" id="font-color" value="#ffffff" style="width:60px; flex-shrink:0;" />
+                    <input type="text" id="font-color-hex" placeholder="#ffffff" style="width:100px; text-align:left;"
+                      oninput="syncColorFromHex(this.value)" />
+                    <span style="font-size:0.8rem; color:var(--clr-text-muted);">اضغط لتحديد اللون أو اكتب الكود بالهكس</span>
+                  </div>
+                </div>
+
+                <div style="display:flex; gap:var(--sp-xl); margin-top:var(--sp-md);">
+                  <label class="toggle-switch" for="font-bold">
+                    <input type="checkbox" id="font-bold" checked style="display:none" />
+                    <div class="toggle-track active" id="bold-track" onclick="toggleCheckbox('font-bold','bold-track')"></div>
+                    <span style="font-size:0.88rem; font-weight:600;">خط عريض (Bold)</span>
+                  </label>
+
+                  <label class="toggle-switch" for="font-shadow">
+                    <input type="checkbox" id="font-shadow" checked style="display:none" />
+                    <div class="toggle-track active" id="shadow-track" onclick="toggleCheckbox('font-shadow','shadow-track')"></div>
+                    <span style="font-size:0.88rem; font-weight:600;">تأثير الظل الخلفي للنص</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Live Preview -->
+              <h3 style="font-size:0.9rem; font-weight:700; color:var(--clr-text-muted); margin-bottom:var(--sp-sm); text-transform:uppercase; letter-spacing:0.5px;">
+                👁️ المعاينة الحية (Live Preview)
+              </h3>
+              <div class="canvas-preview-wrap">
+                <canvas id="preview-canvas"></canvas>
+                <div id="preview-placeholder" style="color:var(--clr-text-faint); font-size:0.85rem; padding:var(--sp-xl); text-align:center;">
+                  قم برفع صورة قالب الكارت في الخطوة ١ لتفعيل المعاينة الحية هنا
+                </div>
+              </div>
+              <div style="display:flex; gap:var(--sp-sm); margin-top:var(--sp-md);">
+                <button id="preview-card" class="btn btn-outline btn-sm">🔄 تحديث المعاينة</button>
+                <button id="save-settings" class="btn btn-primary btn-sm">💾 حفظ وتثبيت الأبعاد</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── STEP 5: Performance Settings (الخطوة 5: إعدادات الأداء) ── -->
+        <div class="section-card full-width" id="step5-card">
+          <div class="section-header">
+            <div class="step-badge">⚙</div>
+            <div>
+              <div class="section-title">إعدادات الأداء وحجم الدفعات</div>
+              <div class="section-subtitle">تعديل الإعدادات لتتناسب مع أداء حاسوبك وسرعة اتصالك بالإنترنت</div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:var(--sp-xl); align-items:center; flex-wrap:wrap;">
+            <div class="field-group" style="margin-bottom:0; min-width:200px;">
+              <label class="field-label" for="batch-size">حجم الدفعة (Batch Size - كارت في الدورة)</label>
+              <input type="number" id="batch-size" value="50" min="1" max="500" />
+            </div>
+            <div class="alert alert-info" style="flex:1; min-width:280px; margin:0;">
+              <span>💡</span>
+              <span>العدد الأقل أفضل في حال كان الإنترنت بطيئاً. العدد الأكبر أسرع للإنترنت القوي. 
+              <strong>العدد الموصى به: 20-50</strong> لمعظم الأجهزة. لتوليد 5,000 كارت، يفضل تفعيل حجم دفعة 50.</span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /steps-grid -->
+
+      <!-- ── GENERATE BUTTON (زر الإنشاء والتوليد) ── -->
+      <div style="text-align:center; margin:var(--sp-xl) 0;">
+        <button id="generate-btn" class="btn btn-generate" aria-label="البدء في توليد بطاقات العضوية">
+          🚀 ابدأ عملية إنشاء الكروت
+        </button>
+        <p style="color:var(--clr-text-faint); font-size:0.8rem; margin-top:var(--sp-sm);">
+          يرجى إتمام الخطوات ١ و ٢ و ٣ وحفظ إعدادات Cloudinary قبل البدء.
+        </p>
+        <button id="cancel-btn" class="btn btn-danger btn-sm hidden" style="margin-top:var(--sp-md);" aria-label="إلغاء العملية">
+          ✋ إيقاف وإلغاء التوليد
+        </button>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════
+           PROGRESS SECTION (قسم لوحة التقدم الفعلي)
+      ═══════════════════════════════════════════════════ -->
+      <div id="progress-section" class="section-card full-width hidden" style="grid-column:1/-1;">
+        <div class="section-header">
+          <div class="step-badge" style="background:linear-gradient(135deg,#f59e0b,#d97706);">⏳</div>
+          <div>
+            <div class="section-title">جاري العمل حالياً وتوليد الكروت</div>
+            <div class="section-subtitle">يرجى عدم إغلاق هذه الصفحة أو التبويب حتى اكتمال التوليد تماماً</div>
+          </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">📋</div>
+            <div id="stat-total" class="stat-value">0</div>
+            <div class="stat-label">المستهدف الكلي</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">🎨</div>
+            <div id="stat-generated" class="stat-value success">0</div>
+            <div class="stat-label">تم إنشاؤها</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">☁️</div>
+            <div id="stat-uploaded" class="stat-value success">0</div>
+            <div class="stat-label">تم رفعها سحابياً</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">❌</div>
+            <div id="stat-failed" class="stat-value error">0</div>
+            <div class="stat-label">فشلت / أخطاء</div>
+          </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-container">
+          <div class="progress-label">
+            <span style="font-weight:600;">نسبة الإنجاز: <span id="progress-current">0</span> / <span id="progress-total">0</span></span>
+            <span id="progress-pct" style="font-weight:700; color:var(--clr-primary);">0%</span>
+          </div>
+          <div class="progress-track">
+            <div id="progress-fill" class="progress-fill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- Timer -->
+        <div style="text-align:center; margin-top:var(--sp-sm);">
+          <span style="color:var(--clr-text-muted); font-size:0.85rem;">
+            ⏱️ الوقت المستغرق: <strong id="stat-time">00:00</strong>
+          </span>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════
+           RESULTS SECTION (قسم النتائج النهائية)
+      ═══════════════════════════════════════════════════ -->
+      <div id="results-section" class="results-panel hidden" style="margin-top:var(--sp-xl);">
+        <div class="results-icon">🎉</div>
+        <h2 class="results-title">اكتمل التوليد بنجاح!</h2>
+
+        <div class="results-stats">
+          <div class="results-stat">
+            <span id="res-generated" class="results-stat-value" style="color:var(--clr-primary);">0</span>
+            <span class="results-stat-label">الكروت المتولدة</span>
+          </div>
+          <div class="results-stat">
+            <span id="res-uploaded" class="results-stat-value" style="color:var(--clr-success);">0</span>
+            <span class="results-stat-label">المرفوعة لـ Cloudinary</span>
+          </div>
+          <div class="results-stat">
+            <span id="res-failed" class="results-stat-value" style="color:var(--clr-error);">0</span>
+            <span class="results-stat-label">الكروت الفاشلة</span>
+          </div>
+          <div class="results-stat">
+            <span id="res-time" class="results-stat-value" style="color:var(--clr-warning);">0s</span>
+            <span class="results-stat-label">الوقت الإجمالي</span>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:var(--sp-md); justify-content:center; flex-wrap:wrap;">
+          <button id="download-excel" class="btn btn-success btn-lg">
+            📥 تحميل ملف النتائج النهائي members_output.xlsx
+          </button>
+          <button id="download-log" class="btn btn-secondary btn-lg">
+            📄 تحميل ملف سجل العمليات والتقارير
+          </button>
+          <button onclick="window.location.reload()" class="btn btn-outline btn-lg">
+            🔄 البدء بعملية توليد جديدة
+          </button>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════
+           LOG PANEL (قسم السجل اللحظي)
+      ═══════════════════════════════════════════════════ -->
+      <div class="log-panel" style="margin-top:var(--sp-xl);" id="log-panel">
+        <div class="log-header" id="log-header" role="button" tabindex="0" aria-expanded="false">
+          <div class="log-title">
+            📋 سجل العمليات التفصيلي (Execution Log)
+            <span id="log-count" class="log-count">0</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:var(--sp-sm);">
+            <button onclick="event.stopPropagation(); document.getElementById('download-log').click()" 
+                    class="btn btn-secondary btn-sm" style="pointer-events:auto;">
+              📄 تحميل السجل
+            </button>
+            <span id="log-chevron">▼</span>
+          </div>
+        </div>
+        <div id="log-content" class="log-content hidden"></div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════
+           HELP SECTION (قسم شروحات الاستخدام)
+      ═══════════════════════════════════════════════════ -->
+      <div id="help-section" class="section-card full-width" style="margin-top:var(--sp-xl);">
+        <div class="section-header">
+          <div class="step-badge" style="background:linear-gradient(135deg,#22c55e,#16a34a);">؟</div>
+          <div>
+            <div class="section-title">كيفية استخدام النظام وضبطه</div>
+            <div class="section-subtitle">شرح مبسط خطوة بخطوة للعمل على البرنامج بالشكل الصحيح</div>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:var(--sp-xl);">
+          <div>
+            <h3 style="color:var(--clr-primary); margin-bottom:var(--sp-md); font-size:0.95rem;">📋 تركيبة وهيكل ملف Excel المطلوب</h3>
+            <p style="color:var(--clr-text-muted); font-size:0.85rem; margin-bottom:var(--sp-sm); line-height:1.7;">
+              يجب أن يحتوي ملف Excel المرفوع على ثلاثة أعمدة رئيسية بنفس الأسماء التالية لضمان قراءتها بشكل صحيح:
+            </p>
+            <div style="background:var(--clr-surface-2); border:1px solid var(--clr-border); border-radius:var(--radius-md); padding:var(--sp-md); font-family:monospace; font-size:0.82rem; direction:ltr;">
+              <table style="width:100%; border-collapse:collapse; text-align:left;">
+                <thead>
+                  <tr style="border-bottom:1px solid var(--clr-border);">
+                    <th style="padding:6px; color:var(--clr-primary);">Name</th>
+                    <th style="padding:6px; color:var(--clr-primary);">Member_ID</th>
+                    <th style="padding:6px; color:var(--clr-primary);">Expiry</th>
+                    <th style="padding:6px; color:var(--clr-text-faint);">أعمدة أخرى...</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td style="padding:6px; color:var(--clr-text-muted);">أحمد محمد</td><td style="padding:6px; color:var(--clr-text-muted);">MEM-001</td><td style="padding:6px; color:var(--clr-text-muted);">31/12/2025</td><td style="padding:6px; color:var(--clr-text-faint);">...</td></tr>
+                  <tr><td style="padding:6px; color:var(--clr-text-muted);">سارة أحمد</td><td style="padding:6px; color:var(--clr-text-muted);">MEM-002</td><td style="padding:6px; color:var(--clr-text-muted);">30/06/2026</td><td style="padding:6px; color:var(--clr-text-faint);">...</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p style="color:var(--clr-text-muted); font-size:0.8rem; margin-top:var(--sp-sm);">
+              * يقوم التطبيق بالتعرف تلقائياً على الأعمدة حتى لو كانت باللغة العربية (الاسم، رقم العضوية، تاريخ الانتهاء).
+            </p>
+          </div>
+
+          <div>
+            <h3 style="color:var(--clr-primary); margin-bottom:var(--sp-md); font-size:0.95rem;">☁️ إعداد وربط Cloudinary مجاناً</h3>
+            <ol style="color:var(--clr-text-muted); font-size:0.85rem; padding-right:var(--sp-lg); line-height:2;">
+              <li>توجه لموقع <strong style="color:var(--clr-text);">cloudinary.com</strong> وأنشئ حساباً مجانياً.</li>
+              <li>انسخ كود الـ <strong style="color:var(--clr-text);">Cloud Name</strong> من الصفحة الرئيسية.</li>
+              <li>من الإعدادات (أيقونة الترس)، اختر <strong style="color:var(--clr-text);">Upload</strong> ثم توجه للأسفل لقسم <strong style="color:var(--clr-text);">Upload presets</strong> واضغط زر الإضافة.</li>
+              <li>قم بتحويل خيار <strong style="color:var(--clr-text);">Signing Mode</strong> ليكون <strong style="color:var(--clr-text);">Unsigned</strong> ثم احفظ الاسم المتولد للـ preset.</li>
+              <li>أدخل الإعدادات في الخطوة ٣ في الأعلى واضغط حفظ لتثبيتها نهائياً.</li>
+            </ol>
+
+            <h3 style="color:var(--clr-primary); margin:var(--sp-md) 0 var(--sp-sm); font-size:0.95rem;">📍 كيفية ضبط مواقع كتابة النصوص</h3>
+            <p style="color:var(--clr-text-muted); font-size:0.85rem; line-height:1.8;">
+              افتح قالب الكارت الفارغ على جهازك بواسطة برنامج الرسام (Microsoft Paint) أو أي محرر صور آخر. ضع مؤشر الماوس على الموقع الذي ترغب في كتابة النص فيه، وستظهر لك الأبعاد (X, Y) بالبكسل أسفل يسار الشاشة. انقل هذه الإعدادات للخطوة ٤ واستعن بـ <strong>المعاينة الحية</strong> للتأكد.
+            </p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /container -->
+  </main>
+
+  <!-- ═══════════════════════════════════════════════════
+       FOOTER (الفوتير)
+  ═══════════════════════════════════════════════════ -->
+  <footer class="app-footer">
+    <p>Card Generator Pro &mdash; كافة العمليات وتوليد الكروت تتم محلياً 100% داخل متصفحك. لا يتم إرسال أي من بيانات الأعضاء أو كروتهم لأي خادم آخر بخلاف حساب Cloudinary الخاص بك لضمان الخصوصية وسرية البيانات.</p>
+  </footer>
+
+</div><!-- /app-wrapper -->
+
+<!-- Toast Container -->
+<div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+<!-- ── Inline JS Helpers (no module, needed for HTML event attrs) ── -->
+<script>
+  // Color hex sync
+  function syncColorFromHex(hex) {
+    const picker = document.getElementById('font-color');
+    if (picker && /^#[0-9A-Fa-f]{6}$/.test(hex)) {
+      picker.value = hex;
+      picker.dispatchEvent(new Event('input'));
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const picker = document.getElementById('font-color');
+    const hex    = document.getElementById('font-color-hex');
+    if (picker && hex) {
+      hex.value = picker.value;
+      picker.addEventListener('input', () => { hex.value = picker.value; });
+    }
+  });
+
+  // Toggle checkbox via visual track
+  function toggleCheckbox(checkId, trackId) {
+    const cb    = document.getElementById(checkId);
+    const track = document.getElementById(trackId);
+    if (!cb || !track) return;
+    cb.checked = !cb.checked;
+    track.classList.toggle('active', cb.checked);
+    // Trigger change event so live preview updates
+    cb.dispatchEvent(new Event('change'));
+  }
+
+  // Initialize toggle track states after DOM load
+  document.addEventListener('DOMContentLoaded', () => {
+    ['font-bold:bold-track','font-shadow:shadow-track'].forEach(pair => {
+      const [cbId, trackId] = pair.split(':');
+      const cb    = document.getElementById(cbId);
+      const track = document.getElementById(trackId);
+      if (cb && track) track.classList.toggle('active', cb.checked);
+    });
+
+    // Keyboard accessibility for drop zones
+    document.querySelectorAll('.drop-zone[role="button"]').forEach(zone => {
+      zone.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          zone.querySelector('input[type="file"]')?.click();
+        }
+      });
+    });
+
+    // Log panel keyboard
+    document.getElementById('log-header')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        document.getElementById('log-header').click();
+      }
+    });
+  });
+</script>
+
+<!-- ── Main App Module ── -->
+<script type="module" src="js/app.js"></script>
+
+</body>
+</html>
