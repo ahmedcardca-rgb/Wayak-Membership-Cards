@@ -418,6 +418,12 @@ function updatePreview() {
   const layout = readLayoutFields();
   const font   = readFontFields();
 
+  // Auto-save immediately to localStorage so settings are never lost
+  state.layout = layout;
+  state.font   = font;
+  Storage.saveLayout(layout);
+  Storage.saveFont(font);
+
   try {
     drawPreview(previewCanvas, state.templateImage, layout, font);
   } catch (err) {
@@ -463,8 +469,12 @@ async function startGeneration() {
   }
 
   // Auto-save current layout/font before processing
-  state.layout = readLayoutFields();
-  state.font   = readFontFields();
+  const layout = readLayoutFields();
+  const font   = readFontFields();
+  state.layout = layout;
+  state.font   = font;
+  Storage.saveLayout(layout);
+  Storage.saveFont(font);
 
   // ── UI Reset ──
   state.isProcessing    = true;
