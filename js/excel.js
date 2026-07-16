@@ -17,6 +17,29 @@ export async function readExcel(file) {
         const workbook = XLSX.read(data, { type: 'array', cellText: true, cellDates: true });
         const sheet    = workbook.Sheets[workbook.SheetNames[0]];
 
+        // Pre-process cells to format dates as DD/MM/YYYY strings
+        for (const key in sheet) {
+          if (key.startsWith('!')) continue;
+          const cell = sheet[key];
+          if (cell && (cell.t === 'd' || cell.v instanceof Date)) {
+            const d = cell.v;
+            if (d instanceof Date && !isNaN(d.getTime())) {
+              // Extract UTC components if SheetJS parsed it in UTC to avoid timezone shift,
+              // or handle standard date component extraction.
+              // SheetJS typically parses excel dates as UTC Date objects to avoid local time shifts.
+              // Let's use getUTCDate/getUTCMonth/getUTCFullYear if the date represents a pure date.
+              // In SheetJS with cellDates: true, dates are parsed as UTC to preserve the visual date.
+              const day   = String(d.getUTCDate()).padStart(2, '0');
+              const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+              const year  = d.getUTCFullYear();
+              const formatted = `${day}/${month}/${year}`;
+              cell.t = 's';
+              cell.v = formatted;
+              cell.w = formatted;
+            }
+          }
+        }
+
         // Get rows as objects (header = first row)
         const rows = XLSX.utils.sheet_to_json(sheet, {
           defval: '',
