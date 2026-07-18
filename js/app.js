@@ -102,40 +102,45 @@ function showSavedBadge(id) {
 // ── Layout Field Sync ─────────────────────────────────────────────────
 function populateLayoutFields(layout) {
   const fields = [
-    ['name',     'name-x',   'name-y',   'name-size'],
-    ['memberId', 'member-x', 'member-y', 'member-size'],
-    ['expiry',   'expiry-x', 'expiry-y', 'expiry-size'],
-    ['phone',    'phone-x',  'phone-y',  'phone-size'],
+    ['name',     'name-x',   'name-y',   'name-size',   'name-align'],
+    ['memberId', 'member-x', 'member-y', 'member-size', 'member-align'],
+    ['expiry',   'expiry-x', 'expiry-y', 'expiry-size', 'expiry-align'],
+    ['phone',    'phone-x',  'phone-y',  'phone-size',  'phone-align'],
   ];
-  for (const [key, xId, yId, sizeId] of fields) {
+  for (const [key, xId, yId, sizeId, alignId] of fields) {
     const el = layout[key] || {};
-    setVal(xId,    el.x    ?? 50);
-    setVal(yId,    el.y    ?? 50);
-    setVal(sizeId, el.size ?? 30);
+    setVal(xId,     el.x     ?? 50);
+    setVal(yId,     el.y     ?? 50);
+    setVal(sizeId,  el.size  ?? 30);
+    setVal(alignId, el.align || 'center');
   }
 }
 
 function readLayoutFields() {
   return {
     name: {
-      x:     parseInt(getVal('name-x'),   10) || 50,
-      y:     parseInt(getVal('name-y'),   10) || 40,
-      size:  parseInt(getVal('name-size'),10) || 45,
+      x:     parseFloat(getVal('name-x'))   || 50,
+      y:     parseFloat(getVal('name-y'))   || 40,
+      size:  parseFloat(getVal('name-size'))|| 45,
+      align: getVal('name-align') || 'center',
     },
     memberId: {
-      x:     parseInt(getVal('member-x'), 10) || 50,
-      y:     parseInt(getVal('member-y'), 10) || 55,
-      size:  parseInt(getVal('member-size'),10)|| 30,
+      x:     parseFloat(getVal('member-x')) || 50,
+      y:     parseFloat(getVal('member-y')) || 55,
+      size:  parseFloat(getVal('member-size'))|| 30,
+      align: getVal('member-align') || 'center',
     },
     expiry: {
-      x:     parseInt(getVal('expiry-x'), 10) || 50,
-      y:     parseInt(getVal('expiry-y'), 10) || 65,
-      size:  parseInt(getVal('expiry-size'),10)|| 30,
+      x:     parseFloat(getVal('expiry-x')) || 50,
+      y:     parseFloat(getVal('expiry-y')) || 65,
+      size:  parseFloat(getVal('expiry-size'))|| 30,
+      align: getVal('expiry-align') || 'center',
     },
     phone: {
-      x:     parseInt(getVal('phone-x'),  10) || 50,
-      y:     parseInt(getVal('phone-y'),  10) || 75,
-      size:  parseInt(getVal('phone-size'),10)|| 30,
+      x:     parseFloat(getVal('phone-x'))  || 50,
+      y:     parseFloat(getVal('phone-y'))  || 75,
+      size:  parseFloat(getVal('phone-size'))|| 30,
+      align: getVal('phone-align') || 'center',
     },
   };
 }

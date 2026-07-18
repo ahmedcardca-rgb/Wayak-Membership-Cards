@@ -280,15 +280,25 @@
                 <div class="field-row">
                   <div class="field-group" style="margin-bottom:0">
                     <label class="field-label" for="name-x">أفقي X (%)</label>
-                    <input type="number" id="name-x" value="50" min="0" max="100" />
+                    <input type="number" id="name-x" value="50" min="0" max="100" step="0.1" />
                   </div>
                   <div class="field-group" style="margin-bottom:0">
                     <label class="field-label" for="name-y">رأسي Y (%)</label>
-                    <input type="number" id="name-y" value="40" min="0" max="100" />
+                    <input type="number" id="name-y" value="40" min="0" max="100" step="0.1" />
                   </div>
+                </div>
+                <div class="field-row mt-sm" style="margin-top:var(--sp-sm)">
                   <div class="field-group" style="margin-bottom:0">
                     <label class="field-label" for="name-size">حجم الخط</label>
-                    <input type="number" id="name-size" value="45" min="8" max="200" />
+                    <input type="number" id="name-size" value="45" min="8" max="200" step="0.1" />
+                  </div>
+                  <div class="field-group" style="margin-bottom:0">
+                    <label class="field-label" for="name-align">محاذاة النص</label>
+                    <select id="name-align">
+                      <option value="left">يسار (Left)</option>
+                      <option value="center" selected>توسيط (Center)</option>
+                      <option value="right">يمين (Right)</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -299,15 +309,25 @@
                 <div class="field-row">
                   <div class="field-group" style="margin-bottom:0">
                     <label class="field-label" for="member-x">أفقي X (%)</label>
-                    <input type="number" id="member-x" value="50" min="0" max="100" />
+                    <input type="number" id="member-x" value="50" min="0" max="100" step="0.1" />
                   </div>
                   <div class="field-group" style="margin-bottom:0">
                     <label class="field-label" for="member-y">رأسي Y (%)</label>
-                    <input type="number" id="member-y" value="55" min="0" max="100" />
+                    <input type="number" id="member-y" value="55" min="0" max="100" step="0.1" />
                   </div>
+                </div>
+                <div class="field-row mt-sm" style="margin-top:var(--sp-sm)">
                   <div class="field-group" style="margin-bottom:0">
                     <label class="field-label" for="member-size">حجم الخط</label>
-                    <input type="number" id="member-size" value="30" min="8" max="200" />
+                    <input type="number" id="member-size" value="30" min="8" max="200" step="0.1" />
+                  </div>
+                  <div class="field-group" style="margin-bottom:0">
+                    <label class="field-label" for="member-align">محاذاة النص</label>
+                    <select id="member-align">
+                      <option value="left">يسار (Left)</option>
+                      <option value="center" selected>توسيط (Center)</option>
+                      <option value="right">يمين (Right)</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -318,15 +338,25 @@
                 <div class="field-row">
                   <div class="field-group" style="margin-bottom:0">
                     <label class="field-label" for="expiry-x">أفقي X (%)</label>
-                    <input type="number" id="expiry-x" value="50" min="0" max="100" />
+                    <input type="number" id="expiry-x" value="50" min="0" max="100" step="0.1" />
                   </div>
                   <div class="field-group" style="margin-bottom:0">
                     <label class="field-label" for="expiry-y">رأسي Y (%)</label>
-                    <input type="number" id="expiry-y" value="65" min="0" max="100" />
+                    <input type="number" id="expiry-y" value="65" min="0" max="100" step="0.1" />
                   </div>
+                </div>
+                <div class="field-row mt-sm" style="margin-top:var(--sp-sm)">
                   <div class="field-group" style="margin-bottom:0">
                     <label class="field-label" for="expiry-size">حجم الخط</label>
-                    <input type="number" id="expiry-size" value="30" min="8" max="200" />
+                    <input type="number" id="expiry-size" value="30" min="8" max="200" step="0.1" />
+                  </div>
+                  <div class="field-group" style="margin-bottom:0">
+                    <label class="field-label" for="expiry-align">محاذاة النص</label>
+                    <select id="expiry-align">
+                      <option value="left">يسار (Left)</option>
+                      <option value="center" selected>توسيط (Center)</option>
+                      <option value="right">يمين (Right)</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -337,15 +367,25 @@
                 <div class="field-row">
                   <div class="field-group" style="margin-bottom:0">
                     <label class="field-label" for="phone-x">أفقي X (%)</label>
-                    <input type="number" id="phone-x" value="50" min="0" max="100" />
+                    <input type="number" id="phone-x" value="50" min="0" max="100" step="0.1" />
                   </div>
                   <div class="field-group" style="margin-bottom:0">
                     <label class="field-label" for="phone-y">رأسي Y (%)</label>
-                    <input type="number" id="phone-y" value="75" min="0" max="100" />
+                    <input type="number" id="phone-y" value="75" min="0" max="100" step="0.1" />
                   </div>
+                </div>
+                <div class="field-row mt-sm" style="margin-top:var(--sp-sm)">
                   <div class="field-group" style="margin-bottom:0">
                     <label class="field-label" for="phone-size">حجم الخط</label>
-                    <input type="number" id="phone-size" value="30" min="8" max="200" />
+                    <input type="number" id="phone-size" value="30" min="8" max="200" step="0.1" />
+                  </div>
+                  <div class="field-group" style="margin-bottom:0">
+                    <label class="field-label" for="phone-align">محاذاة النص</label>
+                    <select id="phone-align">
+                      <option value="left">يسار (Left)</option>
+                      <option value="center" selected>توسيط (Center)</option>
+                      <option value="right">يمين (Right)</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -392,13 +432,13 @@
                 <div style="display:flex; gap:var(--sp-xl); margin-top:var(--sp-md);">
                   <label class="toggle-switch" for="font-bold">
                     <input type="checkbox" id="font-bold" checked style="display:none" />
-                    <div class="toggle-track active" id="bold-track" onclick="toggleCheckbox('font-bold','bold-track')"></div>
+                    <div class="toggle-track active" id="bold-track"></div>
                     <span style="font-size:0.88rem; font-weight:600;">خط عريض (Bold)</span>
                   </label>
 
                   <label class="toggle-switch" for="font-shadow">
                     <input type="checkbox" id="font-shadow" style="display:none" />
-                    <div class="toggle-track" id="shadow-track" onclick="toggleCheckbox('font-shadow','shadow-track')"></div>
+                    <div class="toggle-track" id="shadow-track"></div>
                     <span style="font-size:0.88rem; font-weight:600;">تأثير الظل الخلفي للنص</span>
                   </label>
                 </div>
@@ -683,7 +723,10 @@
       const [cbId, trackId] = pair.split(':');
       const cb    = document.getElementById(cbId);
       const track = document.getElementById(trackId);
-      if (cb && track) track.classList.toggle('active', cb.checked);
+      if (cb && track) {
+        track.classList.toggle('active', cb.checked);
+        cb.addEventListener('change', () => track.classList.toggle('active', cb.checked));
+      }
     });
 
     // Keyboard accessibility for drop zones
