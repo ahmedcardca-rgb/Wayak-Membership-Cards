@@ -271,7 +271,7 @@
             <!-- Coordinates Panel -->
             <div>
               <h3 style="font-size:0.9rem; font-weight:700; color:var(--clr-text-muted); margin-bottom:var(--sp-md); text-transform:uppercase; letter-spacing:0.5px;">
-                📍 إحداثيات موقع النصوص (بالبكسل من الزاوية العلوية اليسرى)
+                📍 إحداثيات موقع النصوص (% نسبة مئوية)
               </h3>
 
               <!-- Name -->
@@ -279,21 +279,17 @@
                 <div style="font-size:0.82rem; font-weight:700; color:var(--clr-primary); margin-bottom:var(--sp-sm);">👤 حقل الاسم (Name)</div>
                 <div class="field-row">
                   <div class="field-group" style="margin-bottom:0">
-                    <label class="field-label" for="name-x">المحور الأفقي X (بكسل)</label>
-                    <input type="number" id="name-x" value="0" min="0" max="9999" />
+                    <label class="field-label" for="name-x">أفقي X (%)</label>
+                    <input type="number" id="name-x" value="50" min="0" max="100" />
                   </div>
                   <div class="field-group" style="margin-bottom:0">
-                    <label class="field-label" for="name-y">المحور الرأسي Y (بكسل)</label>
-                    <input type="number" id="name-y" value="200" min="0" max="9999" />
+                    <label class="field-label" for="name-y">رأسي Y (%)</label>
+                    <input type="number" id="name-y" value="40" min="0" max="100" />
                   </div>
-                </div>
-                <div class="field-group mt-sm" style="margin-bottom:0">
-                  <label class="field-label" for="name-align">محاذاة النص</label>
-                  <select id="name-align">
-                    <option value="left">يسار (Left)</option>
-                    <option value="center" selected>توسيط (Center)</option>
-                    <option value="right">يمين (Right)</option>
-                  </select>
+                  <div class="field-group" style="margin-bottom:0">
+                    <label class="field-label" for="name-size">حجم الخط</label>
+                    <input type="number" id="name-size" value="45" min="8" max="200" />
+                  </div>
                 </div>
               </div>
 
@@ -302,44 +298,55 @@
                 <div style="font-size:0.82rem; font-weight:700; color:var(--clr-accent); margin-bottom:var(--sp-sm);">🪪 رقم العضوية (Member_ID)</div>
                 <div class="field-row">
                   <div class="field-group" style="margin-bottom:0">
-                    <label class="field-label" for="member-x">المحور الأفقي X (بكسل)</label>
-                    <input type="number" id="member-x" value="0" min="0" max="9999" />
+                    <label class="field-label" for="member-x">أفقي X (%)</label>
+                    <input type="number" id="member-x" value="50" min="0" max="100" />
                   </div>
                   <div class="field-group" style="margin-bottom:0">
-                    <label class="field-label" for="member-y">المحور الرأسي Y (بكسل)</label>
-                    <input type="number" id="member-y" value="260" min="0" max="9999" />
+                    <label class="field-label" for="member-y">رأسي Y (%)</label>
+                    <input type="number" id="member-y" value="55" min="0" max="100" />
                   </div>
-                </div>
-                <div class="field-group mt-sm" style="margin-bottom:0">
-                  <label class="field-label" for="member-align">محاذاة النص</label>
-                  <select id="member-align">
-                    <option value="left">يسار (Left)</option>
-                    <option value="center" selected>توسيط (Center)</option>
-                    <option value="right">يمين (Right)</option>
-                  </select>
+                  <div class="field-group" style="margin-bottom:0">
+                    <label class="field-label" for="member-size">حجم الخط</label>
+                    <input type="number" id="member-size" value="30" min="8" max="200" />
+                  </div>
                 </div>
               </div>
 
               <!-- Expiry -->
-              <div style="background:var(--clr-surface-2); border:1px solid var(--clr-border); border-radius:var(--radius-md); padding:var(--sp-md);">
+              <div style="background:var(--clr-surface-2); border:1px solid var(--clr-border); border-radius:var(--radius-md); padding:var(--sp-md); margin-bottom:var(--sp-md);">
                 <div style="font-size:0.82rem; font-weight:700; color:var(--clr-warning); margin-bottom:var(--sp-sm);">📅 تاريخ الانتهاء (Expiry)</div>
                 <div class="field-row">
                   <div class="field-group" style="margin-bottom:0">
-                    <label class="field-label" for="expiry-x">المحور الأفقي X (بكسل)</label>
-                    <input type="number" id="expiry-x" value="0" min="0" max="9999" />
+                    <label class="field-label" for="expiry-x">أفقي X (%)</label>
+                    <input type="number" id="expiry-x" value="50" min="0" max="100" />
                   </div>
                   <div class="field-group" style="margin-bottom:0">
-                    <label class="field-label" for="expiry-y">المحور الرأسي Y (بكسل)</label>
-                    <input type="number" id="expiry-y" value="320" min="0" max="9999" />
+                    <label class="field-label" for="expiry-y">رأسي Y (%)</label>
+                    <input type="number" id="expiry-y" value="65" min="0" max="100" />
+                  </div>
+                  <div class="field-group" style="margin-bottom:0">
+                    <label class="field-label" for="expiry-size">حجم الخط</label>
+                    <input type="number" id="expiry-size" value="30" min="8" max="200" />
                   </div>
                 </div>
-                <div class="field-group mt-sm" style="margin-bottom:0">
-                  <label class="field-label" for="expiry-align">محاذاة النص</label>
-                  <select id="expiry-align">
-                    <option value="left">يسار (Left)</option>
-                    <option value="center" selected>توسيط (Center)</option>
-                    <option value="right">يمين (Right)</option>
-                  </select>
+              </div>
+
+              <!-- Phone -->
+              <div style="background:var(--clr-surface-2); border:1px solid var(--clr-border); border-radius:var(--radius-md); padding:var(--sp-md);">
+                <div style="font-size:0.82rem; font-weight:700; color:var(--clr-success); margin-bottom:var(--sp-sm);">📞 رقم الهاتف (Phone)</div>
+                <div class="field-row">
+                  <div class="field-group" style="margin-bottom:0">
+                    <label class="field-label" for="phone-x">أفقي X (%)</label>
+                    <input type="number" id="phone-x" value="50" min="0" max="100" />
+                  </div>
+                  <div class="field-group" style="margin-bottom:0">
+                    <label class="field-label" for="phone-y">رأسي Y (%)</label>
+                    <input type="number" id="phone-y" value="75" min="0" max="100" />
+                  </div>
+                  <div class="field-group" style="margin-bottom:0">
+                    <label class="field-label" for="phone-size">حجم الخط</label>
+                    <input type="number" id="phone-size" value="30" min="8" max="200" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -375,8 +382,8 @@
                 <div class="field-group">
                   <label class="field-label" for="font-color">لون النص</label>
                   <div style="display:flex; gap:var(--sp-sm); align-items:center;">
-                    <input type="color" id="font-color" value="#ffffff" style="width:60px; flex-shrink:0;" />
-                    <input type="text" id="font-color-hex" placeholder="#ffffff" style="width:100px; text-align:left;"
+                    <input type="color" id="font-color" value="#000000" style="width:60px; flex-shrink:0;" />
+                    <input type="text" id="font-color-hex" placeholder="#000000" style="width:100px; text-align:left;"
                       oninput="syncColorFromHex(this.value)" />
                     <span style="font-size:0.8rem; color:var(--clr-text-muted);">اضغط لتحديد اللون أو اكتب الكود بالهكس</span>
                   </div>
@@ -390,8 +397,8 @@
                   </label>
 
                   <label class="toggle-switch" for="font-shadow">
-                    <input type="checkbox" id="font-shadow" checked style="display:none" />
-                    <div class="toggle-track active" id="shadow-track" onclick="toggleCheckbox('font-shadow','shadow-track')"></div>
+                    <input type="checkbox" id="font-shadow" style="display:none" />
+                    <div class="toggle-track" id="shadow-track" onclick="toggleCheckbox('font-shadow','shadow-track')"></div>
                     <span style="font-size:0.88rem; font-weight:600;">تأثير الظل الخلفي للنص</span>
                   </label>
                 </div>

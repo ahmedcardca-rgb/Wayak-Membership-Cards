@@ -71,10 +71,11 @@ export async function readExcel(file) {
  * @param {Map<string, string>} urlMap - Map of Member_ID → Card_URL
  * @param {string=} filename     - Output filename
  */
-export function writeExcel(rows, headers, urlMap, filename = 'members_output.xlsx') {
+export function writeExcel(rows, headers, urlMap, colMap, filename = 'members_output.xlsx') {
   // Build output rows with Card_URL column
   const outputRows = rows.map((row) => {
-    const memberId = String(row['Member_ID'] || row['member_id'] || row['MEMBER_ID'] || '').trim();
+    // Extract memberId using the detected column mapping
+    const memberId = String(row[colMap.memberCol] || '').trim();
     const url      = urlMap.get(memberId) || '';
     return { ...row, Card_URL: url };
   });
@@ -124,6 +125,7 @@ export function detectColumns(headers) {
     nameCol:   find('Name', 'الاسم', 'CustomerName', 'FullName', 'full_name') || headers[0] || 'Name',
     memberCol: find('Member_ID', 'MemberID', 'MemberId', 'member_id', 'ID', 'رقم العضوية', 'رقم_العضوية') || headers[1] || 'Member_ID',
     expiryCol: find('Expiry', 'ExpiryDate', 'Expiry_Date', 'expiry', 'تاريخ الانتهاء', 'تاريخ_الانتهاء') || headers[2] || 'Expiry',
+    phoneCol:  find('Phone', 'Mobile', 'رقم الهاتف', 'الموبايل', 'الهاتف', 'phone_number') || headers[3] || 'Phone',
   };
 }
 

@@ -10,17 +10,26 @@
 export const DEFAULT_LAYOUT = {
   name: {
     x:     50,
-    y:     200,
-    align: 'center',  // 'left' | 'center' | 'right'
+    y:     40,
+    size:  45,
+    align: 'center',
   },
   memberId: {
     x:     50,
-    y:     250,
+    y:     55,
+    size:  30,
     align: 'center',
   },
   expiry: {
     x:     50,
-    y:     300,
+    y:     65,
+    size:  30,
+    align: 'center',
+  },
+  phone: {
+    x:     50,
+    y:     75,
+    size:  30,
     align: 'center',
   },
 };
@@ -29,11 +38,11 @@ export const DEFAULT_LAYOUT = {
  * Default font configuration
  */
 export const DEFAULT_FONT = {
-  family:    'Arial',
+  family:    'Cairo',
   size:      28,
-  color:     '#ffffff',
+  color:     '#000000',
   bold:      true,
-  shadow:    true,
+  shadow:    false,
   shadowColor: 'rgba(0,0,0,0.6)',
   shadowBlur:  4,
   shadowOffX:  2,
@@ -94,10 +103,9 @@ export function drawCard(canvas, template, member, layout, font) {
   ctx.drawImage(template, 0, 0, canvas.width, canvas.height);
 
   // Font settings
-  const weight   = font.bold ? 'bold ' : '';
-  const fontSize = Math.max(8, parseInt(font.size, 10));
-  ctx.font       = `${weight}${fontSize}px ${font.family}, Cairo, Arial, sans-serif`;
-  ctx.fillStyle  = font.color || '#ffffff';
+  const weight   = font.bold ? '900 ' : '';
+  const globalSize = Math.max(8, parseInt(font.size, 10) || 28);
+  ctx.fillStyle  = font.color || '#000000';
 
   // Shadow
   if (font.shadow) {
@@ -112,38 +120,25 @@ export function drawCard(canvas, template, member, layout, font) {
     ctx.shadowOffsetY = 0;
   }
 
-  // Helper to resolve X based on alignment
-  const resolveX = (fieldLayout) => {
-    const align = fieldLayout.align || 'left';
-    if (align === 'center') return canvas.width / 2;
-    if (align === 'right')  return canvas.width - (fieldLayout.x || 0);
-    return fieldLayout.x || 0;
+  const drawField = (text, fieldLayout) => {
+    if (!text || !fieldLayout) return;
+    const xPct = parseFloat(fieldLayout.x) || 50;
+    const yPct = parseFloat(fieldLayout.y) || 50;
+    const size = parseFloat(fieldLayout.size) || globalSize;
+
+    const x = canvas.width * (xPct / 100);
+    const y = canvas.height * (yPct / 100);
+
+    ctx.font = `${weight}${size}px ${font.family}, 'Cairo', sans-serif`;
+    ctx.textAlign = fieldLayout.align || 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(text), x, y);
   };
 
-  const resolveAlign = (fieldLayout) => {
-    return fieldLayout.align || 'left';
-  };
-
-  // Draw Name
-  if (layout.name && member.name) {
-    ctx.textAlign    = resolveAlign(layout.name);
-    ctx.textBaseline = 'middle';
-    ctx.fillText(String(member.name), resolveX(layout.name), layout.name.y || 200);
-  }
-
-  // Draw Member ID
-  if (layout.memberId && member.memberId) {
-    ctx.textAlign    = resolveAlign(layout.memberId);
-    ctx.textBaseline = 'middle';
-    ctx.fillText(String(member.memberId), resolveX(layout.memberId), layout.memberId.y || 250);
-  }
-
-  // Draw Expiry
-  if (layout.expiry && member.expiry) {
-    ctx.textAlign    = resolveAlign(layout.expiry);
-    ctx.textBaseline = 'middle';
-    ctx.fillText(String(member.expiry), resolveX(layout.expiry), layout.expiry.y || 300);
-  }
+  drawField(member.name, layout.name);
+  drawField(member.memberId, layout.memberId);
+  drawField(member.expiry, layout.expiry);
+  drawField(member.phone, layout.phone);
 
   // Reset shadow to avoid affecting other draws
   ctx.shadowColor   = 'transparent';
@@ -182,8 +177,9 @@ export function canvasToBlob(canvas, quality = 0.92) {
  */
 export function drawPreview(canvas, template, layout, font) {
   drawCard(canvas, template, {
-    name:     'Ahmed Mohamed',
+    name:     'أحمد محمد',
     memberId: 'MEM-000001',
     expiry:   '31/12/2025',
+    phone:    '01012345678',
   }, layout, font);
 }

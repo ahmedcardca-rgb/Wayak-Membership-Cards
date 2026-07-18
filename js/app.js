@@ -102,45 +102,51 @@ function showSavedBadge(id) {
 // ── Layout Field Sync ─────────────────────────────────────────────────
 function populateLayoutFields(layout) {
   const fields = [
-    ['name',     'name-x',   'name-y',   'name-align'],
-    ['memberId', 'member-x', 'member-y', 'member-align'],
-    ['expiry',   'expiry-x', 'expiry-y', 'expiry-align'],
+    ['name',     'name-x',   'name-y',   'name-size'],
+    ['memberId', 'member-x', 'member-y', 'member-size'],
+    ['expiry',   'expiry-x', 'expiry-y', 'expiry-size'],
+    ['phone',    'phone-x',  'phone-y',  'phone-size'],
   ];
-  for (const [key, xId, yId, alignId] of fields) {
+  for (const [key, xId, yId, sizeId] of fields) {
     const el = layout[key] || {};
-    setVal(xId,     el.x     ?? 0);
-    setVal(yId,     el.y     ?? 0);
-    setVal(alignId, el.align || 'center');
+    setVal(xId,    el.x    ?? 50);
+    setVal(yId,    el.y    ?? 50);
+    setVal(sizeId, el.size ?? 30);
   }
 }
 
 function readLayoutFields() {
   return {
     name: {
-      x:     parseInt(getVal('name-x'),   10) || 0,
-      y:     parseInt(getVal('name-y'),   10) || 200,
-      align: getVal('name-align') || 'center',
+      x:     parseInt(getVal('name-x'),   10) || 50,
+      y:     parseInt(getVal('name-y'),   10) || 40,
+      size:  parseInt(getVal('name-size'),10) || 45,
     },
     memberId: {
-      x:     parseInt(getVal('member-x'), 10) || 0,
-      y:     parseInt(getVal('member-y'), 10) || 260,
-      align: getVal('member-align') || 'center',
+      x:     parseInt(getVal('member-x'), 10) || 50,
+      y:     parseInt(getVal('member-y'), 10) || 55,
+      size:  parseInt(getVal('member-size'),10)|| 30,
     },
     expiry: {
-      x:     parseInt(getVal('expiry-x'), 10) || 0,
-      y:     parseInt(getVal('expiry-y'), 10) || 320,
-      align: getVal('expiry-align') || 'center',
+      x:     parseInt(getVal('expiry-x'), 10) || 50,
+      y:     parseInt(getVal('expiry-y'), 10) || 65,
+      size:  parseInt(getVal('expiry-size'),10)|| 30,
+    },
+    phone: {
+      x:     parseInt(getVal('phone-x'),  10) || 50,
+      y:     parseInt(getVal('phone-y'),  10) || 75,
+      size:  parseInt(getVal('phone-size'),10)|| 30,
     },
   };
 }
 
 // ── Font Field Sync ───────────────────────────────────────────────────
 function populateFontFields(font) {
-  setVal('font-family', font.family || 'Arial');
+  setVal('font-family', font.family || 'Cairo');
   setVal('font-size',   font.size   || 28);
-  setVal('font-color',  font.color  || '#ffffff');
+  setVal('font-color',  font.color  || '#000000');
   setChecked('font-bold',   font.bold   !== false);
-  setChecked('font-shadow', font.shadow !== false);
+  setChecked('font-shadow', font.shadow === true);
 
   // Sync track UI states
   updateToggleTrack('font-bold',   'bold-track');
@@ -662,7 +668,7 @@ function downloadOutputExcel() {
   }
   try {
     const { urlMap } = state.lastSummary;
-    writeExcel(state.excelData.rows, state.excelData.headers, urlMap, 'members_output.xlsx');
+    writeExcel(state.excelData.rows, state.excelData.headers, urlMap, state.colMap, 'members_output.xlsx');
     showToast('members_output.xlsx downloaded! ✓', 'success');
   } catch (err) {
     showToast(`Export failed: ${err.message}`, 'error');

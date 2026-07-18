@@ -85,6 +85,7 @@ export async function processAllCards(opts) {
       const name     = String(row[colMap.nameCol]   || '').trim();
       const memberId = String(row[colMap.memberCol]  || '').trim();
       const expiry   = String(row[colMap.expiryCol]  || '').trim();
+      const phone    = String(row[colMap.phoneCol]   || '').trim();
 
       if (!memberId) {
         stats.failed++;
@@ -95,7 +96,7 @@ export async function processAllCards(opts) {
 
       try {
         // ── Step 1: Draw card ──
-        drawCard(canvas, template, { name, memberId, expiry }, layout, font);
+        drawCard(canvas, template, { name, memberId, expiry, phone }, layout, font);
         stats.generated++;
         onLog('INFO', `Generated card for: ${name} (${memberId})`);
 
