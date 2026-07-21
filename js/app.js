@@ -69,12 +69,12 @@ function loadPersistedSettings() {
 
   // Layout
   const savedLayout = Storage.loadLayout();
-  state.layout = savedLayout ? savedLayout : structuredClone(DEFAULT_LAYOUT);
+  state.layout = savedLayout ? savedLayout : JSON.parse(JSON.stringify(DEFAULT_LAYOUT));
   populateLayoutFields(state.layout);
 
   // Font
   const savedFont = Storage.loadFont();
-  state.font = savedFont ? savedFont : structuredClone(DEFAULT_FONT);
+  state.font = savedFont ? savedFont : JSON.parse(JSON.stringify(DEFAULT_FONT));
   populateFontFields(state.font);
 
   // Sync color hex field
@@ -869,4 +869,8 @@ function setChecked(id, val) {
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', init);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
