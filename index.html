@@ -14,6 +14,9 @@
 
   <!-- SheetJS (Excel) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- JSZip & FileSaver -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
   <!-- Styles -->
   <link rel="stylesheet" href="css/main.css" />
@@ -276,7 +279,12 @@
 
               <!-- Name -->
               <div style="background:var(--clr-surface-2); border:1px solid var(--clr-border); border-radius:var(--radius-md); padding:var(--sp-md); margin-bottom:var(--sp-md);">
-                <div style="font-size:0.82rem; font-weight:700; color:var(--clr-primary); margin-bottom:var(--sp-sm);">👤 حقل الاسم (Name)</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--sp-sm);">
+                  <div style="font-size:0.82rem; font-weight:700; color:var(--clr-primary);">👤 حقل الاسم (Name)</div>
+                  <label style="font-size:0.8rem; display:flex; align-items:center; gap:5px; cursor:pointer;">
+                    <input type="checkbox" id="name-show" checked> إظهار في الكارت
+                  </label>
+                </div>
                 <div class="field-row">
                   <div class="field-group" style="margin-bottom:0">
                     <label class="field-label" for="name-x">أفقي X (%)</label>
@@ -305,7 +313,12 @@
 
               <!-- Member ID -->
               <div style="background:var(--clr-surface-2); border:1px solid var(--clr-border); border-radius:var(--radius-md); padding:var(--sp-md); margin-bottom:var(--sp-md);">
-                <div style="font-size:0.82rem; font-weight:700; color:var(--clr-accent); margin-bottom:var(--sp-sm);">🪪 رقم العضوية (Member_ID)</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--sp-sm);">
+                  <div style="font-size:0.82rem; font-weight:700; color:var(--clr-accent);">🪪 رقم العضوية (Member_ID)</div>
+                  <label style="font-size:0.8rem; display:flex; align-items:center; gap:5px; cursor:pointer;">
+                    <input type="checkbox" id="member-show" checked> إظهار في الكارت
+                  </label>
+                </div>
                 <div class="field-row">
                   <div class="field-group" style="margin-bottom:0">
                     <label class="field-label" for="member-x">أفقي X (%)</label>
@@ -334,7 +347,12 @@
 
               <!-- Expiry -->
               <div style="background:var(--clr-surface-2); border:1px solid var(--clr-border); border-radius:var(--radius-md); padding:var(--sp-md); margin-bottom:var(--sp-md);">
-                <div style="font-size:0.82rem; font-weight:700; color:var(--clr-warning); margin-bottom:var(--sp-sm);">📅 تاريخ الانتهاء (Expiry)</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--sp-sm);">
+                  <div style="font-size:0.82rem; font-weight:700; color:var(--clr-warning);">📅 تاريخ الانتهاء (Expiry)</div>
+                  <label style="font-size:0.8rem; display:flex; align-items:center; gap:5px; cursor:pointer;">
+                    <input type="checkbox" id="expiry-show" checked> إظهار في الكارت
+                  </label>
+                </div>
                 <div class="field-row">
                   <div class="field-group" style="margin-bottom:0">
                     <label class="field-label" for="expiry-x">أفقي X (%)</label>
@@ -363,7 +381,12 @@
 
               <!-- Phone -->
               <div style="background:var(--clr-surface-2); border:1px solid var(--clr-border); border-radius:var(--radius-md); padding:var(--sp-md);">
-                <div style="font-size:0.82rem; font-weight:700; color:var(--clr-success); margin-bottom:var(--sp-sm);">📞 رقم الهاتف (Phone)</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--sp-sm);">
+                  <div style="font-size:0.82rem; font-weight:700; color:var(--clr-success);">📞 رقم الهاتف (Phone)</div>
+                  <label style="font-size:0.8rem; display:flex; align-items:center; gap:5px; cursor:pointer;">
+                    <input type="checkbox" id="phone-show" checked> إظهار في الكارت
+                  </label>
+                </div>
                 <div class="field-row">
                   <div class="field-group" style="margin-bottom:0">
                     <label class="field-label" for="phone-x">أفقي X (%)</label>
@@ -477,10 +500,17 @@
               <label class="field-label" for="batch-size">حجم الدفعة (Batch Size - كارت في الدورة)</label>
               <input type="number" id="batch-size" value="50" min="1" max="500" />
             </div>
+            <div class="field-group" style="margin-bottom:0; min-width:200px;">
+              <label class="field-label" for="export-mode">وضع التصدير (Export Mode)</label>
+              <select id="export-mode">
+                <option value="cloudinary" selected>الرفع إلى Cloudinary (روابط)</option>
+                <option value="zip">تحميل كملف مضغوط (ZIP Offline)</option>
+              </select>
+            </div>
             <div class="alert alert-info" style="flex:1; min-width:280px; margin:0;">
               <span>💡</span>
               <span>العدد الأقل أفضل في حال كان الإنترنت بطيئاً. العدد الأكبر أسرع للإنترنت القوي. 
-              <strong>العدد الموصى به: 20-50</strong> لمعظم الأجهزة. لتوليد 5,000 كارت، يفضل تفعيل حجم دفعة 50.</span>
+              <strong>العدد الموصى به: 20-50</strong> لمعظم الأجهزة. وضع التصدير ZIP أسرع بكثير ولا يحتاج للإنترنت.</span>
             </div>
           </div>
         </div>

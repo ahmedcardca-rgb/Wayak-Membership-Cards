@@ -133,17 +133,17 @@ export function detectColumns(headers) {
  * Generate and download a sample template Excel file.
  */
 export function downloadTemplateExcel() {
-  const headers = ['Name', 'Member_ID', 'Expiry'];
+  const headers = ['Name', 'Member_ID', 'Expiry', 'Phone'];
   const templateRows = [
-    { Name: 'أحمد محمد', Member_ID: 'MEM-001', Expiry: '31/12/2025' },
-    { Name: 'سارة أحمد', Member_ID: 'MEM-002', Expiry: '30/06/2026' }
+    { Name: 'أحمد محمد', Member_ID: 'MEM-001', Expiry: '31/12/2025', Phone: '01012345678' },
+    { Name: 'سارة أحمد', Member_ID: 'MEM-002', Expiry: '30/06/2026', Phone: '01087654321' }
   ];
   
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.json_to_sheet(templateRows, { header: headers });
   
   // Set column widths
-  ws['!cols'] = [{ wch: 20 }, { wch: 15 }, { wch: 15 }];
+  ws['!cols'] = [{ wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
 
   XLSX.utils.book_append_sheet(wb, ws, 'Template');
   XLSX.writeFile(wb, 'members_template.xlsx');

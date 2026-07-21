@@ -13,24 +13,28 @@ export const DEFAULT_LAYOUT = {
     y:     40,
     size:  45,
     align: 'center',
+    show:  true,
   },
   memberId: {
     x:     50,
     y:     55,
     size:  30,
     align: 'center',
+    show:  true,
   },
   expiry: {
     x:     50,
     y:     65,
     size:  30,
     align: 'center',
+    show:  true,
   },
   phone: {
     x:     50,
     y:     75,
     size:  30,
     align: 'center',
+    show:  true,
   },
 };
 
@@ -122,14 +126,26 @@ export function drawCard(canvas, template, member, layout, font) {
 
   const drawField = (text, fieldLayout) => {
     if (!text || !fieldLayout) return;
+    if (fieldLayout.show === false) return; // Skip drawing if hidden
+
     const xPct = parseFloat(fieldLayout.x) || 50;
     const yPct = parseFloat(fieldLayout.y) || 50;
-    const size = parseFloat(fieldLayout.size) || globalSize;
+    let size = parseFloat(fieldLayout.size) || globalSize;
 
     const x = canvas.width * (xPct / 100);
     const y = canvas.height * (yPct / 100);
 
+    // Auto-Fit Logic (Smart Scaling)
+    const MAX_WIDTH = canvas.width * 0.90; // Max 90% of card width
     ctx.font = `${weight}${size}px ${font.family}, 'Cairo', sans-serif`;
+    
+    let textWidth = ctx.measureText(String(text)).width;
+    while (textWidth > MAX_WIDTH && size > 10) {
+      size -= 1;
+      ctx.font = `${weight}${size}px ${font.family}, 'Cairo', sans-serif`;
+      textWidth = ctx.measureText(String(text)).width;
+    }
+
     ctx.textAlign = fieldLayout.align || 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(String(text), x, y);

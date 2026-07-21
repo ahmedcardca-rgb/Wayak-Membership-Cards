@@ -102,17 +102,18 @@ function showSavedBadge(id) {
 // ── Layout Field Sync ─────────────────────────────────────────────────
 function populateLayoutFields(layout) {
   const fields = [
-    ['name',     'name-x',   'name-y',   'name-size',   'name-align'],
-    ['memberId', 'member-x', 'member-y', 'member-size', 'member-align'],
-    ['expiry',   'expiry-x', 'expiry-y', 'expiry-size', 'expiry-align'],
-    ['phone',    'phone-x',  'phone-y',  'phone-size',  'phone-align'],
+    ['name',     'name-x',   'name-y',   'name-size',   'name-align',   'name-show'],
+    ['memberId', 'member-x', 'member-y', 'member-size', 'member-align', 'member-show'],
+    ['expiry',   'expiry-x', 'expiry-y', 'expiry-size', 'expiry-align', 'expiry-show'],
+    ['phone',    'phone-x',  'phone-y',  'phone-size',  'phone-align',  'phone-show'],
   ];
-  for (const [key, xId, yId, sizeId, alignId] of fields) {
+  for (const [key, xId, yId, sizeId, alignId, showId] of fields) {
     const el = layout[key] || {};
     setVal(xId,     el.x     ?? 50);
     setVal(yId,     el.y     ?? 50);
     setVal(sizeId,  el.size  ?? 30);
     setVal(alignId, el.align || 'center');
+    setChecked(showId, el.show !== false);
   }
 }
 
@@ -123,24 +124,28 @@ function readLayoutFields() {
       y:     parseFloat(getVal('name-y'))   || 40,
       size:  parseFloat(getVal('name-size'))|| 45,
       align: getVal('name-align') || 'center',
+      show:  document.getElementById('name-show')?.checked !== false,
     },
     memberId: {
       x:     parseFloat(getVal('member-x')) || 50,
       y:     parseFloat(getVal('member-y')) || 55,
       size:  parseFloat(getVal('member-size'))|| 30,
       align: getVal('member-align') || 'center',
+      show:  document.getElementById('member-show')?.checked !== false,
     },
     expiry: {
       x:     parseFloat(getVal('expiry-x')) || 50,
       y:     parseFloat(getVal('expiry-y')) || 65,
       size:  parseFloat(getVal('expiry-size'))|| 30,
       align: getVal('expiry-align') || 'center',
+      show:  document.getElementById('expiry-show')?.checked !== false,
     },
     phone: {
       x:     parseFloat(getVal('phone-x'))  || 50,
       y:     parseFloat(getVal('phone-y'))  || 75,
       size:  parseFloat(getVal('phone-size'))|| 30,
       align: getVal('phone-align') || 'center',
+      show:  document.getElementById('phone-show')?.checked !== false,
     },
   };
 }
@@ -207,9 +212,10 @@ function bindEvents() {
 
   // Layout/Font fields — live preview on change
   const livePreviewIds = [
-    'name-x','name-y','name-align',
-    'member-x','member-y','member-align',
-    'expiry-x','expiry-y','expiry-align',
+    'name-x','name-y','name-align','name-size','name-show',
+    'member-x','member-y','member-align','member-size','member-show',
+    'expiry-x','expiry-y','expiry-align','expiry-size','expiry-show',
+    'phone-x','phone-y','phone-align','phone-size','phone-show',
     'font-family','font-size','font-color','font-bold','font-shadow',
   ];
   livePreviewIds.forEach(id => {
@@ -244,12 +250,21 @@ function bindEvents() {
   // ── Log Panel Toggle ──
   document.getElementById('log-header')?.addEventListener('click', () => {
     const content = document.getElementById('log-content');
-    if (content) content.classList.toggle('hidden');
     const chevron = document.getElementById('log-chevron');
-    if (chevron) chevron.textContent = content?.classList.contains('hidden') ? '▼' : '▲';
-    const header = document.getElementById('log-header');
-    if (header) header.setAttribute('aria-expanded', String(!content?.classList.contains('hidden')));
+    if (!content || !chevron) return;
+    const isHidden = content.classList.contains('hidden');
+    if (isHidden) {
+      content.classList.remove('hidden');
+      chevron.style.transform = 'rotate(180deg)';
+    } else {
+      content.classList.add('hidden');
+      chevron.style.transform = 'rotate(0deg)';
+    }
   });
+
+  // ── Initialize Canvas Drag & Drop ──
+  initCanvasDragAndDrop();
+});
 
   // ── Batch Size ──
   document.getElementById('batch-size')?.addEventListener('change', (e) => {
@@ -474,6 +489,112 @@ function updatePreview() {
   }
 }
 
+// ── Visual Drag & Drop for Canvas ─────────────────────────────────────
+function initCanvasDragAndDrop() {
+  const canvas = document.getElementById('preview-canvas');
+  if (!canvas) return;
+
+  let isDragging = false;
+  let draggedField = null;
+
+  const getFieldAtCoords = (x, y) => {
+    if (!state.templateImage) return null;
+    const layout = state.layout;
+    const cw = canvas.width;
+    const ch = canvas.height;
+    const hitRadius = Math.max(cw, ch) * 0.1; 
+    
+    let closestField = null;
+    let minDist = Infinity;
+    
+    ['name', 'memberId', 'expiry', 'phone'].forEach(field => {
+      const fieldData = layout[field];
+      if (!fieldData || fieldData.show === false) return;
+      const fx = cw * (parseFloat(fieldData.x) / 100);
+      const fy = ch * (parseFloat(fieldData.y) / 100);
+      const dist = Math.hypot(fx - x, fy - y);
+      if (dist < hitRadius && dist < minDist) {
+        minDist = dist;
+        closestField = field;
+      }
+    });
+    return closestField;
+  };
+
+  const updateCoordsFromEvent = (e) => {
+    if (!isDragging || !draggedField || !state.templateImage) return;
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
+    
+    const xPct = Math.max(0, Math.min(100, (x / canvas.width) * 100)).toFixed(1);
+    const yPct = Math.max(0, Math.min(100, (y / canvas.height) * 100)).toFixed(1);
+    
+    const xInput = document.getElementById(`${draggedField}-x`);
+    const yInput = document.getElementById(`${draggedField}-y`);
+    if (xInput) xInput.value = xPct;
+    if (yInput) yInput.value = yPct;
+    
+    updatePreview();
+  };
+
+  const handleDown = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
+    
+    draggedField = getFieldAtCoords(x, y);
+    if (draggedField) {
+      isDragging = true;
+      canvas.style.cursor = 'grabbing';
+      if(e.preventDefault && !e.touches) e.preventDefault();
+    }
+  };
+
+  const handleMove = (e) => {
+    if (isDragging) {
+      if(e.cancelable) e.preventDefault();
+      updateCoordsFromEvent(e);
+    } else {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.clientX;
+      const clientY = e.clientY;
+      if (clientX !== undefined) {
+         const scaleX = canvas.width / rect.width;
+         const scaleY = canvas.height / rect.height;
+         const x = (clientX - rect.left) * scaleX;
+         const y = (clientY - rect.top) * scaleY;
+         canvas.style.cursor = getFieldAtCoords(x, y) ? 'grab' : 'default';
+      }
+    }
+  };
+
+  const handleUp = () => {
+    isDragging = false;
+    draggedField = null;
+    canvas.style.cursor = 'default';
+  };
+
+  canvas.addEventListener('mousedown', handleDown);
+  canvas.addEventListener('mousemove', handleMove);
+  window.addEventListener('mouseup', handleUp);
+  
+  canvas.addEventListener('touchstart', handleDown, { passive: false });
+  canvas.addEventListener('touchmove', handleMove, { passive: false });
+  window.addEventListener('touchend', handleUp);
+}
+
+
 // ── Save Layout & Font ────────────────────────────────────────────────
 function saveLayoutAndFont() {
   const layout = readLayoutFields();
@@ -557,6 +678,7 @@ async function startGeneration() {
 
   try {
     const batchSize = parseInt(getVal('batch-size'), 10) || 50;
+    const exportMode = getVal('export-mode') || 'cloudinary';
 
     const { urlMap, stats } = await processAllCards({
       template:        state.templateImage,
@@ -567,6 +689,7 @@ async function startGeneration() {
       cloudinaryCreds: state.cloudinaryCreds,
       shortioCreds:    state.shortioCreds,
       batchSize,
+      exportMode,
       canvas:          workCanvas,
       signal:          state.abortController.signal,
       onProgress: (s) => {

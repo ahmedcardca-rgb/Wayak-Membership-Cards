@@ -47,6 +47,7 @@ export async function processAllCards(opts) {
     cloudinaryCreds,
     shortioCreds,
     batchSize = 50,
+    exportMode = 'cloudinary',
     canvas,
     onProgress,
     onLog,
@@ -54,6 +55,12 @@ export async function processAllCards(opts) {
   } = opts;
 
   const urlMap = new Map();  // Member_ID → Card_URL
+
+  // Initialize ZIP if needed
+  let zip = null;
+  if (exportMode === 'zip') {
+    zip = new window.JSZip();
+  }
 
   const stats = {
     total:     rows.length,
@@ -79,6 +86,9 @@ export async function processAllCards(opts) {
     const batchEnd   = batchStart + batch.length - 1;
     onLog('INFO', `Processing batch ${batchIdx + 1}/${batches.length} (rows ${batchStart}–${batchEnd})`);
 
+    const uploadTasks = [];
+
+    // ── Phase 1: Draw and Export to Blobs (Sequential to protect shared Canvas context) ──
     for (const row of batch) {
       if (signal?.aborted) break;
 
@@ -95,43 +105,76 @@ export async function processAllCards(opts) {
       }
 
       try {
-        // ── Step 1: Draw card ──
         drawCard(canvas, template, { name, memberId, expiry, phone }, layout, font);
         stats.generated++;
         onLog('INFO', `Generated card for: ${name} (${memberId})`);
 
-        // ── Step 2: Export to blob ──
         const blob = await canvasToBlob(canvas, 0.92);
-
-        // ── Step 3: Upload to Cloudinary ──
-        const publicId = buildPublicId(memberId);
-        let url        = await uploadToCloudinary(blob, publicId, cloudinaryCreds, signal);
-        stats.uploaded++;
-        onLog('SUCCESS', `Uploaded: ${name} → ${url}`, { member: name });
-
-        // ── Step 4: Shorten URL via Short.io (Optional) ──
-        if (shortioCreds && shortioCreds.apiKey && shortioCreds.domain) {
-          try {
-            onLog('INFO', `Shortening URL for: ${name} via Short.io…`);
-            const shortUrl = await shortenUrl(url, shortioCreds, signal);
-            url = shortUrl;
-            onLog('SUCCESS', `Shortened: ${name} → ${url}`, { member: name });
-          } catch (shortErr) {
-            onLog('WARN', `Shortening failed for: ${name} — ${shortErr.message || shortErr}. Using Cloudinary URL instead.`, { member: name });
-          }
-        }
-
-        urlMap.set(memberId, url);
-
+        uploadTasks.push({ blob, name, memberId });
       } catch (err) {
         stats.failed++;
         const errMsg = err?.message || String(err);
         stats.errors.push({ member: name, memberId, reason: errMsg });
-        onLog('ERROR', `Failed: ${name} (${memberId}) — ${errMsg}`, { member: name, reason: errMsg });
+        onLog('ERROR', `Generation failed: ${name} (${memberId}) — ${errMsg}`, { member: name, reason: errMsg });
+        onProgress({ ...stats });
       }
+    }
 
-      // Report progress after each card
-      onProgress({ ...stats });
+    if (signal?.aborted) break;
+
+    // ── Phase 2: Export/Upload ──
+    if (exportMode === 'zip') {
+      for (const task of uploadTasks) {
+        if (signal?.aborted) break;
+        const { blob, name, memberId } = task;
+        // Sanitize filename
+        const safeName = String(name).replace(/[\/\\?%*:|"<>]/g, '_');
+        zip.file(`${memberId}_${safeName}.jpg`, blob);
+        stats.uploaded++; // Count it as processed
+        urlMap.set(memberId, 'Local ZIP');
+        onLog('SUCCESS', `Added to ZIP: ${name} (${memberId})`);
+        onProgress({ ...stats });
+      }
+    } else {
+      // ── Cloudinary Concurrent Upload ──
+      const SUB_CHUNK_SIZE = 10; // Upload 10 cards simultaneously
+      for (let i = 0; i < uploadTasks.length; i += SUB_CHUNK_SIZE) {
+        if (signal?.aborted) break;
+        const subChunk = uploadTasks.slice(i, i + SUB_CHUNK_SIZE);
+
+        await Promise.all(subChunk.map(async (task) => {
+          if (signal?.aborted) return;
+          const { blob, name, memberId } = task;
+
+          try {
+            const publicId = buildPublicId(memberId);
+            let url        = await uploadToCloudinary(blob, publicId, cloudinaryCreds, signal);
+            stats.uploaded++;
+            onLog('SUCCESS', `Uploaded: ${name} → ${url}`, { member: name });
+
+            if (shortioCreds && shortioCreds.apiKey && shortioCreds.domain) {
+              try {
+                onLog('INFO', `Shortening URL for: ${name} via Short.io…`);
+                const shortUrl = await shortenUrl(url, shortioCreds, signal);
+                url = shortUrl;
+                onLog('SUCCESS', `Shortened: ${name} → ${url}`, { member: name });
+              } catch (shortErr) {
+                onLog('WARN', `Shortening failed for: ${name} — ${shortErr.message || shortErr}. Using Cloudinary URL instead.`, { member: name });
+              }
+            }
+
+            urlMap.set(memberId, url);
+          } catch (err) {
+            stats.failed++;
+            const errMsg = err?.message || String(err);
+            stats.errors.push({ member: name, memberId, reason: errMsg });
+            onLog('ERROR', `Upload failed: ${name} (${memberId}) — ${errMsg}`, { member: name, reason: errMsg });
+          }
+
+          // Report progress after each card finishes uploading
+          onProgress({ ...stats });
+        }));
+      }
     }
 
     // ── After each batch: yield to browser GC ──
@@ -143,8 +186,19 @@ export async function processAllCards(opts) {
 
   onLog(
     stats.failed === 0 ? 'SUCCESS' : 'WARN',
-    `Processing complete. Generated: ${stats.generated}, Uploaded: ${stats.uploaded}, Failed: ${stats.failed}`
+    `Processing complete. Generated: ${stats.generated}, Processed: ${stats.uploaded}, Failed: ${stats.failed}`
   );
+
+  if (exportMode === 'zip' && zip) {
+    onLog('INFO', 'Generating ZIP file... please wait. (This may take a moment for large files)');
+    try {
+      const content = await zip.generateAsync({ type: 'blob' });
+      window.saveAs(content, 'Membership_Cards.zip');
+      onLog('SUCCESS', 'ZIP file downloaded successfully!');
+    } catch (zipErr) {
+      onLog('ERROR', `Failed to generate ZIP: ${zipErr.message}`);
+    }
+  }
 
   return { urlMap, stats };
 }
