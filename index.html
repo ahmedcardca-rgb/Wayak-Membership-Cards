@@ -170,9 +170,9 @@
           <div class="alert alert-warning" style="margin-bottom:var(--sp-lg); font-size:0.82rem;">
             <span>⚠️</span>
             <div>
-              <strong>طريقتان للربط والمزامنة:</strong><br/>
-              <strong>الطريقة الأولى (مستحسن لغير المبرمجين):</strong> أدخل Cloud Name و Upload Preset (قم بإنشاء preset من نوع <em>Unsigned</em> في إعدادات Cloudinary لفتح الرفع دون أكواد التشفير).<br/>
-              <strong>الطريقة الثانية:</strong> أدخل Cloud Name و API Key و API Secret للرفع المشفر والموثق.
+              <strong>تحذير أمني هام (Security Warning):</strong><br/>
+              بما أن هذا النظام يعمل بالكامل من داخل متصفحك (Client-side)، يُنصح <strong>بشدة</strong> استخدام (الطريقة الأولى) وهي إنشاء <code>Upload Preset</code> من نوع <em>Unsigned</em> في إعدادات Cloudinary لفتح الرفع الآمن دون الحاجة لكلمات سر.<br/>
+              إدخال الـ <code>API Secret</code> هنا (الطريقة الثانية) يعني أنه سيُحفظ محلياً في متصفحك، وهو غير مستحسن لأغراض الإنتاج الفعلي.
             </div>
           </div>
 
@@ -505,6 +505,7 @@
               <select id="export-mode">
                 <option value="cloudinary" selected>الرفع إلى Cloudinary (روابط)</option>
                 <option value="zip">تحميل كملف مضغوط (ZIP Offline)</option>
+                <option value="both">الرفع لـ Cloudinary + تحميل ZIP (معاً)</option>
               </select>
             </div>
             <div class="alert alert-info" style="flex:1; min-width:280px; margin:0;">

@@ -242,7 +242,15 @@ function bindEvents() {
   document.getElementById('download-excel')?.addEventListener('click', downloadOutputExcel);
 
   // ── Download Template ──
-  document.getElementById('download-template')?.addEventListener('click', downloadTemplateExcel);
+  document.getElementById('download-template')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    try {
+      downloadTemplateExcel();
+    } catch (err) {
+      console.error(err);
+      alert('خطأ أثناء تحميل النموذج: ' + err.message);
+    }
+  });
 
   // ── Download Log ──
   document.getElementById('download-log')?.addEventListener('click', downloadLog);
@@ -680,6 +688,18 @@ async function startGeneration() {
     const batchSize = parseInt(getVal('batch-size'), 10) || 50;
     const exportMode = getVal('export-mode') || 'cloudinary';
 
+    // ── ZIP Memory Warning ──
+    if ((exportMode === 'zip' || exportMode === 'both') && total > 1000) {
+      const proceed = confirm(`تحذير أمني للذاكرة:\nأنت تقوم بإنشاء أكثر من 1000 كارت (${total}) في وضع التصدير كملف ZIP.\nهذا قد يستهلك مساحة هائلة من ذاكرة المتصفح (RAM) وقد يؤدي لانهياره حسب مواصفات جهازك.\n\nنصيحة للمحترفين: للكميات الضخمة جداً، يُفضل اختيار "الرفع لـ Cloudinary فقط".\n\nهل أنت متأكد أنك تريد الاستمرار في تكوين ملف الـ ZIP؟`);
+      if (!proceed) {
+        state.isProcessing = false;
+        clearLogUI();
+        setButtonLoading(genBtn, false);
+        if (cancelBtn) cancelBtn.classList.add('hidden');
+        return;
+      }
+    }
+
     const { urlMap, stats } = await processAllCards({
       template:        state.templateImage,
       rows:            state.excelData.rows,
@@ -783,8 +803,10 @@ function showResults(stats, duration) {
 // ── Cancel Generation ─────────────────────────────────────────────────
 function cancelGeneration() {
   if (state.abortController) {
-    state.abortController.abort();
-    showToast('Cancellation requested…', 'info');
+    if (confirm('هل أنت متأكد أنك تريد إيقاف عملية التوليد؟ سيتم إيقاف العمليات القادمة وحفظ ما تم إنجازه ورفعه فقط.')) {
+      state.abortController.abort();
+      showToast('تم طلب الإيقاف، يرجى الانتظار…', 'info');
+    }
   }
 }
 

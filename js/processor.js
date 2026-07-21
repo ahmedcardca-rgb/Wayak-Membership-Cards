@@ -58,7 +58,7 @@ export async function processAllCards(opts) {
 
   // Initialize ZIP if needed
   let zip = null;
-  if (exportMode === 'zip') {
+  if (exportMode === 'zip' || exportMode === 'both') {
     zip = new window.JSZip();
   }
 
@@ -146,6 +146,12 @@ export async function processAllCards(opts) {
           if (signal?.aborted) return;
           const { blob, name, memberId } = task;
 
+          // If 'both' mode, add to ZIP first
+          if (exportMode === 'both' && zip) {
+            const safeName = String(name).replace(/[\/\\?%*:|"<>]/g, '_');
+            zip.file(`${memberId}_${safeName}.jpg`, blob);
+          }
+
           try {
             const publicId = buildPublicId(memberId);
             let url        = await uploadToCloudinary(blob, publicId, cloudinaryCreds, signal);
@@ -189,7 +195,7 @@ export async function processAllCards(opts) {
     `Processing complete. Generated: ${stats.generated}, Processed: ${stats.uploaded}, Failed: ${stats.failed}`
   );
 
-  if (exportMode === 'zip' && zip) {
+  if ((exportMode === 'zip' || exportMode === 'both') && zip) {
     onLog('INFO', 'Generating ZIP file... please wait. (This may take a moment for large files)');
     try {
       const content = await zip.generateAsync({ type: 'blob' });
