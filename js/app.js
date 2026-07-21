@@ -272,7 +272,6 @@ function bindEvents() {
 
   // ── Initialize Canvas Drag & Drop ──
   initCanvasDragAndDrop();
-});
 
   // ── Batch Size ──
   document.getElementById('batch-size')?.addEventListener('change', (e) => {
