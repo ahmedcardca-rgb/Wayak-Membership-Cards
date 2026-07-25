@@ -73,10 +73,8 @@ export async function readExcel(file) {
  */
 export function writeExcel(rows, headers, urlMap, colMap, filename = 'members_output.xlsx') {
   // Build output rows with Card_URL column
-  const outputRows = rows.map((row) => {
-    // Extract memberId using the detected column mapping
-    const memberId = String(row[colMap.memberCol] || '').trim();
-    const url      = urlMap.get(memberId) || '';
+  const outputRows = rows.map((row, index) => {
+    const url = urlMap.get(index) || '';
     return { ...row, Card_URL: url };
   });
 

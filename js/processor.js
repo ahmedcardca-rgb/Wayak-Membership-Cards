@@ -54,7 +54,10 @@ export async function processAllCards(opts) {
     signal,
   } = opts;
 
-  const urlMap = new Map();  // Member_ID → Card_URL
+  const urlMap = new Map();  // rowIndex → Card_URL
+
+  // Inject rowIndex into rows to track them through batches
+  const rowsWithIndex = rows.map((r, i) => ({ ...r, __rowIndex: i }));
 
   // Initialize ZIP if needed
   let zip = null;
@@ -73,7 +76,7 @@ export async function processAllCards(opts) {
   onLog('INFO', `Starting processing of ${rows.length} members in batches of ${batchSize}`);
 
   // Split into batches
-  const batches = chunkArray(rows, batchSize);
+  const batches = chunkArray(rowsWithIndex, batchSize);
 
   for (let batchIdx = 0; batchIdx < batches.length; batchIdx++) {
     if (signal?.aborted) {
@@ -92,14 +95,15 @@ export async function processAllCards(opts) {
     for (const row of batch) {
       if (signal?.aborted) break;
 
+      const rowIndex = row.__rowIndex;
       const name     = String(row[colMap.nameCol]   || '').trim();
       const memberId = String(row[colMap.memberCol]  || '').trim();
       const expiry   = String(row[colMap.expiryCol]  || '').trim();
       const phone    = String(row[colMap.phoneCol]   || '').trim();
 
-      if (!memberId) {
+      if (!memberId && !name) {
         stats.failed++;
-        onLog('WARN', `Skipped row — missing Member_ID`, { member: name || '(unknown)' });
+        onLog('WARN', `Skipped empty row (Row ${rowIndex + 1})`, { member: '(unknown)' });
         onProgress({ ...stats });
         continue;
       }
@@ -110,7 +114,7 @@ export async function processAllCards(opts) {
         onLog('INFO', `Generated card for: ${name} (${memberId})`);
 
         const blob = await canvasToBlob(canvas, 0.92);
-        uploadTasks.push({ blob, name, memberId });
+        uploadTasks.push({ blob, name, memberId, rowIndex });
       } catch (err) {
         stats.failed++;
         const errMsg = err?.message || String(err);
@@ -126,13 +130,13 @@ export async function processAllCards(opts) {
     if (exportMode === 'zip') {
       for (const task of uploadTasks) {
         if (signal?.aborted) break;
-        const { blob, name, memberId } = task;
-        // Sanitize filename
-        const safeName = String(name).replace(/[\/\\?%*:|"<>]/g, '_');
-        zip.file(`${memberId}_${safeName}.jpg`, blob);
+        const { blob, name, memberId, rowIndex } = task;
+        // Sanitize filename and completely decouple from memberId
+        const safeName = String(name || 'Unknown').replace(/[\/\\?%*:|"<>]/g, '_');
+        zip.file(`Card_${rowIndex + 1}_${safeName}.jpg`, blob);
         stats.uploaded++; // Count it as processed
-        urlMap.set(memberId, 'Local ZIP');
-        onLog('SUCCESS', `Added to ZIP: ${name} (${memberId})`);
+        urlMap.set(rowIndex, 'Local ZIP');
+        onLog('SUCCESS', `Added to ZIP: ${name} (Row ${rowIndex + 1})`);
         onProgress({ ...stats });
       }
     } else {
@@ -144,37 +148,37 @@ export async function processAllCards(opts) {
 
         await Promise.all(subChunk.map(async (task) => {
           if (signal?.aborted) return;
-          const { blob, name, memberId } = task;
+          const { blob, name, memberId, rowIndex } = task;
 
           // If 'both' mode, add to ZIP first
           if (exportMode === 'both' && zip) {
-            const safeName = String(name).replace(/[\/\\?%*:|"<>]/g, '_');
-            zip.file(`${memberId}_${safeName}.jpg`, blob);
+            const safeName = String(name || 'Unknown').replace(/[\/\\?%*:|"<>]/g, '_');
+            zip.file(`Card_${rowIndex + 1}_${safeName}.jpg`, blob);
           }
 
           try {
-            const publicId = buildPublicId(memberId);
-            let url        = await uploadToCloudinary(blob, publicId, cloudinaryCreds, signal);
+            // Generate a completely random and unique publicId independent of Member_ID
+            const randomString = Math.random().toString(36).substring(2, 8);
+            const publicId = `cards/card_${rowIndex + 1}_${Date.now()}_${randomString}`;
+            
+            let url = await uploadToCloudinary(blob, publicId, cloudinaryCreds, signal);
             stats.uploaded++;
-            onLog('SUCCESS', `Uploaded: ${name} → ${url}`, { member: name });
+            onLog('SUCCESS', `Uploaded: ${name || 'N/A'} (Row ${rowIndex + 1}) → ${url}`, { member: name });
 
+            // Shorten if configured
             if (shortioCreds && shortioCreds.apiKey && shortioCreds.domain) {
               try {
-                onLog('INFO', `Shortening URL for: ${name} via Short.io…`);
-                const shortUrl = await shortenUrl(url, shortioCreds, signal);
-                url = shortUrl;
-                onLog('SUCCESS', `Shortened: ${name} → ${url}`, { member: name });
-              } catch (shortErr) {
-                onLog('WARN', `Shortening failed for: ${name} — ${shortErr.message || shortErr}. Using Cloudinary URL instead.`, { member: name });
+                url = await shortenUrl(url, shortioCreds, signal);
+                onLog('SUCCESS', `Shortened: ${url}`, { member: name });
+              } catch (shErr) {
+                onLog('WARN', `Shortener failed, using long URL for ${name || 'N/A'} (${shErr.message})`);
               }
             }
-
-            urlMap.set(memberId, url);
-          } catch (err) {
+            urlMap.set(rowIndex, url);
+          } catch (upErr) {
             stats.failed++;
-            const errMsg = err?.message || String(err);
-            stats.errors.push({ member: name, memberId, reason: errMsg });
-            onLog('ERROR', `Upload failed: ${name} (${memberId}) — ${errMsg}`, { member: name, reason: errMsg });
+            stats.errors.push({ member: name, rowIndex, reason: upErr.message });
+            onLog('ERROR', `Upload failed: ${name || 'N/A'} (Row ${rowIndex + 1}) — ${upErr.message}`);
           }
 
           // Report progress after each card finishes uploading
