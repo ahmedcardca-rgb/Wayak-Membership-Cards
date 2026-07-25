@@ -9,31 +9,31 @@
  */
 export const DEFAULT_LAYOUT = {
   name: {
-    x:     50,
-    y:     40,
+    x:     18.1,
+    y:     41.2,
     size:  45,
     align: 'center',
     show:  true,
   },
   memberId: {
-    x:     50,
-    y:     55,
-    size:  30,
-    align: 'center',
+    x:     9,
+    y:     63.7,
+    size:  45,
+    align: 'left',
     show:  true,
   },
   expiry: {
-    x:     50,
-    y:     65,
-    size:  30,
-    align: 'center',
+    x:     9.7,
+    y:     75.1,
+    size:  45,
+    align: 'left',
     show:  true,
   },
   phone: {
-    x:     50,
-    y:     75,
-    size:  30,
-    align: 'center',
+    x:     8.1,
+    y:     52.7,
+    size:  45,
+    align: 'left',
     show:  true,
   },
 };
@@ -43,7 +43,7 @@ export const DEFAULT_LAYOUT = {
  */
 export const DEFAULT_FONT = {
   family:    'Cairo',
-  size:      28,
+  size:      100,
   color:     '#000000',
   bold:      true,
   shadow:    false,

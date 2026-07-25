@@ -120,31 +120,31 @@ function populateLayoutFields(layout) {
 function readLayoutFields() {
   return {
     name: {
-      x:     parseFloat(getVal('name-x'))   || 50,
-      y:     parseFloat(getVal('name-y'))   || 40,
+      x:     parseFloat(getVal('name-x'))   || 18.1,
+      y:     parseFloat(getVal('name-y'))   || 41.2,
       size:  parseFloat(getVal('name-size'))|| 45,
       align: getVal('name-align') || 'center',
       show:  document.getElementById('name-show')?.checked !== false,
     },
     memberId: {
-      x:     parseFloat(getVal('member-x')) || 50,
-      y:     parseFloat(getVal('member-y')) || 55,
-      size:  parseFloat(getVal('member-size'))|| 30,
-      align: getVal('member-align') || 'center',
+      x:     parseFloat(getVal('member-x')) || 9,
+      y:     parseFloat(getVal('member-y')) || 63.7,
+      size:  parseFloat(getVal('member-size'))|| 45,
+      align: getVal('member-align') || 'left',
       show:  document.getElementById('member-show')?.checked !== false,
     },
     expiry: {
-      x:     parseFloat(getVal('expiry-x')) || 50,
-      y:     parseFloat(getVal('expiry-y')) || 65,
-      size:  parseFloat(getVal('expiry-size'))|| 30,
-      align: getVal('expiry-align') || 'center',
+      x:     parseFloat(getVal('expiry-x')) || 9.7,
+      y:     parseFloat(getVal('expiry-y')) || 75.1,
+      size:  parseFloat(getVal('expiry-size'))|| 45,
+      align: getVal('expiry-align') || 'left',
       show:  document.getElementById('expiry-show')?.checked !== false,
     },
     phone: {
-      x:     parseFloat(getVal('phone-x'))  || 50,
-      y:     parseFloat(getVal('phone-y'))  || 75,
-      size:  parseFloat(getVal('phone-size'))|| 30,
-      align: getVal('phone-align') || 'center',
+      x:     parseFloat(getVal('phone-x'))  || 8.1,
+      y:     parseFloat(getVal('phone-y'))  || 52.7,
+      size:  parseFloat(getVal('phone-size'))|| 45,
+      align: getVal('phone-align') || 'left',
       show:  document.getElementById('phone-show')?.checked !== false,
     },
   };
@@ -153,7 +153,7 @@ function readLayoutFields() {
 // ── Font Field Sync ───────────────────────────────────────────────────
 function populateFontFields(font) {
   setVal('font-family', font.family || 'Cairo');
-  setVal('font-size',   font.size   || 28);
+  setVal('font-size',   font.size   || 100);
   setVal('font-color',  font.color  || '#000000');
   setChecked('font-bold',   font.bold   !== false);
   setChecked('font-shadow', font.shadow === true);
@@ -171,9 +171,9 @@ function updateToggleTrack(cbId, trackId) {
 
 function readFontFields() {
   return {
-    family:      getVal('font-family') || 'Arial',
-    size:        parseInt(getVal('font-size'), 10) || 28,
-    color:       getVal('font-color') || '#ffffff',
+    family:      getVal('font-family') || 'Cairo',
+    size:        parseInt(getVal('font-size'), 10) || 100,
+    color:       getVal('font-color') || '#000000',
     bold:        document.getElementById('font-bold')?.checked   ?? true,
     shadow:      document.getElementById('font-shadow')?.checked ?? true,
     shadowColor: 'rgba(0,0,0,0.6)',
@@ -363,13 +363,8 @@ async function handleTemplateFile(file) {
       `;
     }
 
-    // Auto-set default Y coordinates based on image height
-    const h = state.templateImage.naturalHeight;
-    if (h > 0) {
-      setVal('name-y',   Math.round(h * 0.55));
-      setVal('member-y', Math.round(h * 0.65));
-      setVal('expiry-y', Math.round(h * 0.75));
-    }
+    // Ensure initial layout values apply cleanly on first template load without overriding them
+    // (We removed the old fixed Y overrides here since we now use percentage-based layout)
 
     markStepDone(1);
     showToast('Template image loaded ✓', 'success');
