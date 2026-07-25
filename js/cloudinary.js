@@ -134,5 +134,8 @@ export function buildPublicId(memberId) {
   const safe = String(memberId)
     .trim()
     .replace(/[^\w\u0600-\u06FF\-\.]/g, '_');
-  return `cards/${safe}`;
+  
+  // Append a unique timestamp to force a fresh upload and new link every time
+  // This satisfies the requirement to always generate a new URL even for duplicate Member IDs.
+  return `cards/${safe}_${Date.now()}`;
 }
