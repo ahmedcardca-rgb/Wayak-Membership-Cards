@@ -8,19 +8,21 @@
 /* ── CSS Variables ── */
 :root {
   /* Colors */
-  --clr-bg:            #0a0e1a;
-  --clr-surface:       #111827;
-  --clr-surface-2:     #1c2333;
-  --clr-surface-3:     #252f45;
-  --clr-border:        #2a3555;
-  --clr-border-light:  #3a4a6b;
+  --clr-bg:            #0a1a10;
+  --clr-surface:       #0f1f15;
+  --clr-surface-2:     #162b1c;
+  --clr-surface-3:     #1d3524;
+  --clr-border:        #1e4028;
+  --clr-border-light:  #2a5c38;
 
-  --clr-primary:       #4f8ef7;
-  --clr-primary-dark:  #3a75e0;
-  --clr-primary-glow:  rgba(79, 142, 247, 0.25);
+  /* Wayak Green (primary) */
+  --clr-primary:       #6BBF3E;
+  --clr-primary-dark:  #52a02c;
+  --clr-primary-glow:  rgba(107, 191, 62, 0.22);
 
-  --clr-accent:        #7c5cfc;
-  --clr-accent-glow:   rgba(124, 92, 252, 0.25);
+  /* Wayak Cyan (accent) */
+  --clr-accent:        #29B5E8;
+  --clr-accent-glow:   rgba(41, 181, 232, 0.22);
 
   --clr-success:       #22c55e;
   --clr-success-bg:    rgba(34, 197, 94, 0.12);
@@ -29,20 +31,20 @@
   --clr-error:         #ef4444;
   --clr-error-bg:      rgba(239, 68, 68, 0.12);
 
-  --clr-text:          #e2e8f5;
-  --clr-text-muted:    #8b9ab8;
-  --clr-text-faint:    #4a5a7a;
+  --clr-text:          #e2f5e8;
+  --clr-text-muted:    #7aaa8a;
+  --clr-text-faint:    #3a6045;
 
   /* Gradients */
-  --grad-primary:      linear-gradient(135deg, #4f8ef7 0%, #7c5cfc 100%);
-  --grad-surface:      linear-gradient(145deg, #1c2333 0%, #111827 100%);
-  --grad-hero:         linear-gradient(135deg, #0d1b3e 0%, #1a0d3e 50%, #0d1b3e 100%);
+  --grad-primary:      linear-gradient(135deg, #6BBF3E 0%, #29B5E8 100%);
+  --grad-surface:      linear-gradient(145deg, #162b1c 0%, #0f1f15 100%);
+  --grad-hero:         linear-gradient(135deg, #071a0c 0%, #07151f 50%, #071a0c 100%);
 
   /* Shadows */
-  --shadow-sm:         0 2px 8px rgba(0,0,0,0.3);
-  --shadow-md:         0 4px 24px rgba(0,0,0,0.4);
-  --shadow-lg:         0 8px 48px rgba(0,0,0,0.5);
-  --shadow-glow:       0 0 32px rgba(79, 142, 247, 0.2);
+  --shadow-sm:         0 2px 8px rgba(0,0,0,0.4);
+  --shadow-md:         0 4px 24px rgba(0,0,0,0.5);
+  --shadow-lg:         0 8px 48px rgba(0,0,0,0.6);
+  --shadow-glow:       0 0 32px rgba(107, 191, 62, 0.2);
 
   /* Typography */
   --font-main:         'Inter', 'Cairo', system-ui, sans-serif;
@@ -73,22 +75,23 @@
 
 /* Light Mode Overrides */
 [data-theme="light"] {
-  --clr-bg:            #f0f4fd;
+  --clr-bg:            #f0faf3;
   --clr-surface:       #ffffff;
-  --clr-surface-2:     #f8faff;
-  --clr-surface-3:     #eef2fc;
-  --clr-border:        #dde3f0;
-  --clr-border-light:  #c8d2e8;
-  --clr-text:          #1a2540;
-  --clr-text-muted:    #556080;
-  --clr-text-faint:    #8898bb;
-  --clr-primary-glow:  rgba(79, 142, 247, 0.15);
+  --clr-surface-2:     #f4fdf6;
+  --clr-surface-3:     #e8f7ec;
+  --clr-border:        #c8e8d0;
+  --clr-border-light:  #a8d8b4;
+  --clr-text:          #0d2a16;
+  --clr-text-muted:    #3a7050;
+  --clr-text-faint:    #7aaa8a;
+  --clr-primary-glow:  rgba(107, 191, 62, 0.15);
   --shadow-sm:         0 2px 8px rgba(0,0,0,0.08);
   --shadow-md:         0 4px 24px rgba(0,0,0,0.1);
   --shadow-lg:         0 8px 48px rgba(0,0,0,0.12);
-  --grad-surface:      linear-gradient(145deg, #f8faff 0%, #ffffff 100%);
-  --grad-hero:         linear-gradient(135deg, #e8f0ff 0%, #f0e8ff 50%, #e8f0ff 100%);
+  --grad-surface:      linear-gradient(145deg, #f4fdf6 0%, #ffffff 100%);
+  --grad-hero:         linear-gradient(135deg, #e4f7ea 0%, #ddf4fc 50%, #e4f7ea 100%);
 }
+
 
 /* ── Reset ── */
 *, *::before, *::after {

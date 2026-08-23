@@ -164,23 +164,42 @@ export function drawCard(canvas, template, member, layout, font) {
 }
 
 /**
- * Export canvas to a Blob (WebP) — optimized for minimum file size.
- * WebP is ~60-80% smaller than JPEG at equivalent visual quality.
+ * Export canvas to a Blob (WebP) — ultra-optimized for minimum size and maximum speed.
+ * Downscales the canvas to MAX_EXPORT_WIDTH before encoding (huge speed + size win).
  * Falls back to JPEG if WebP is not supported by the browser.
+ *
  * @param {HTMLCanvasElement} canvas
- * @param {number=} quality - 0 to 1, default 0.65 (very small file, still clear)
+ * @param {number=} quality - 0 to 1, default 0.55 (tiny file, clear enough for card preview)
  * @returns {Promise<Blob>}
  */
-export function canvasToBlob(canvas, quality = 0.65) {
+export function canvasToBlob(canvas, quality = 0.55) {
+  // ── Downscale to reduce pixels before encoding ──
+  // Max export width: 900px. Cards wider than this get scaled down proportionally.
+  // This is the single biggest win for both speed and file size.
+  const MAX_EXPORT_WIDTH = 900;
+
+  let exportCanvas = canvas;
+  if (canvas.width > MAX_EXPORT_WIDTH) {
+    const scale = MAX_EXPORT_WIDTH / canvas.width;
+    const offscreen = document.createElement('canvas');
+    offscreen.width  = MAX_EXPORT_WIDTH;
+    offscreen.height = Math.round(canvas.height * scale);
+    const octx = offscreen.getContext('2d');
+    octx.imageSmoothingEnabled = true;
+    octx.imageSmoothingQuality = 'high';
+    octx.drawImage(canvas, 0, 0, offscreen.width, offscreen.height);
+    exportCanvas = offscreen;
+  }
+
   return new Promise((resolve, reject) => {
     // Try WebP first for maximum compression
-    canvas.toBlob(
+    exportCanvas.toBlob(
       (blob) => {
         if (blob && blob.type === 'image/webp') {
           resolve(blob);
         } else {
-          // Fallback to JPEG if WebP is not supported
-          canvas.toBlob(
+          // Fallback to JPEG if browser doesn't support WebP export
+          exportCanvas.toBlob(
             (jpegBlob) => {
               if (jpegBlob) resolve(jpegBlob);
               else reject(new Error('Canvas toBlob returned null'));
