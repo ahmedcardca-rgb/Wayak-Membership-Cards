@@ -18,18 +18,18 @@ import { shortenUrl }                      from './shortener.js';
 
 /**
  * @typedef {Object} ProcessorOptions
- * @property {HTMLImageElement}  template     - Pre-loaded card template
- * @property {Object[]}          rows         - All member rows from Excel
- * @property {Object}            colMap       - { nameCol, memberCol, expiryCol }
- * @property {Object}            layout       - Card layout settings
- * @property {Object}            font         - Font settings
- * @property {Object}            cloudinaryCreds - Cloudinary credentials
- * @property {Object=}           shortioCreds - Short.io credentials (optional)
- * @property {number}            batchSize    - Cards per batch (default 50)
- * @property {HTMLCanvasElement} canvas       - Reusable canvas element
- * @property {Function}          onProgress   - (stats) => void
- * @property {Function}          onLog        - (level, msg, meta?) => void
- * @property {AbortSignal=}      signal       - For cancellation
+ * @property {HTMLImageElement}  template       - Pre-loaded card template
+ * @property {Object[]}          rows           - All member rows from Excel
+ * @property {Object}            colMap         - { nameCol, memberCol, expiryCol }
+ * @property {Object}            layout         - Card layout settings
+ * @property {Object}            font           - Font settings
+ * @property {import('./cloudinary-pool.js').CloudinaryPool} cloudinaryPool - Pool of Cloudinary accounts
+ * @property {Object=}           shortioCreds   - Short.io credentials (optional)
+ * @property {number}            batchSize      - Cards per batch (default 50)
+ * @property {HTMLCanvasElement} canvas         - Reusable canvas element
+ * @property {Function}          onProgress     - (stats) => void
+ * @property {Function}          onLog          - (level, msg, meta?) => void
+ * @property {AbortSignal=}      signal         - For cancellation
  */
 
 /**
@@ -44,7 +44,7 @@ export async function processAllCards(opts) {
     colMap,
     layout,
     font,
-    cloudinaryCreds,
+    cloudinaryPool,
     shortioCreds,
     batchSize = 50,
     exportMode = 'cloudinary',
@@ -157,11 +157,15 @@ export async function processAllCards(opts) {
           }
 
           try {
-            // Generate a completely random and unique publicId independent of Member_ID
+            // Generate a completely random and unique publicId
             const randomString = Math.random().toString(36).substring(2, 8);
             const publicId = `cards/card_${rowIndex + 1}_${Date.now()}_${randomString}`;
-            
-            let url = await uploadToCloudinary(blob, publicId, cloudinaryCreds, signal);
+
+            // ── Round-Robin: pick the next Cloudinary account ──
+            const creds = cloudinaryPool.getNext();
+            onLog('INFO', `[حساب ${cloudinaryPool.currentIndex === 0 ? cloudinaryPool.size : cloudinaryPool.currentIndex}/${cloudinaryPool.size}] رفع: ${name || 'N/A'} (صف ${rowIndex + 1})`);
+
+            let url = await uploadToCloudinary(blob, publicId, creds, signal);
             stats.uploaded++;
             onLog('SUCCESS', `Uploaded: ${name || 'N/A'} (Row ${rowIndex + 1}) → ${url}`, { member: name });
 

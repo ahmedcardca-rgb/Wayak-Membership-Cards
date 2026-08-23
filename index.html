@@ -159,20 +159,42 @@
           <div class="section-header">
             <div class="step-badge">٣</div>
             <div>
-              <div class="section-title">إعدادات سحابة Cloudinary</div>
-              <div class="section-subtitle">تُحفظ الإعدادات تلقائياً في المتصفح لاستخدامها لاحقاً</div>
+              <div class="section-title">حسابات Cloudinary <span id="accounts-count" style="background:var(--clr-primary-glow); color:var(--clr-primary); font-size:0.8rem; padding:2px 10px; border-radius:var(--radius-full); margin-right:6px;">0</span></div>
+              <div class="section-subtitle">أضف أكثر من حساب — سيتم التناوب بينهم تلقائياً لتوزيع الرفع وتجنب الحد الأقصى</div>
             </div>
             <div style="margin-right:auto; margin-left:0;">
-              <span id="cloudinary-saved-badge" class="badge badge-saved hidden">✓ تم الحفظ</span>
+              <span id="cloudinary-saved-badge" class="badge badge-saved hidden">✓ محفوظ</span>
             </div>
+          </div>
+
+          <!-- ── Accounts List ── -->
+          <div id="accounts-list" style="display:flex; flex-wrap:wrap; gap:var(--sp-md); margin-bottom:var(--sp-md); min-height:60px;">
+            <div class="accounts-empty">لا توجد حسابات مضافة بعد. أضف حساباً من الأسفل ↓</div>
+          </div>
+
+          <!-- ── Round-Robin Status ── -->
+          <div id="rr-section" class="hidden" style="display:flex; align-items:center; gap:var(--sp-md); margin-bottom:var(--sp-lg); background:var(--clr-surface-2); border:1px solid var(--clr-border); border-radius:var(--radius-md); padding:var(--sp-md);">
+            <span style="font-size:1.2rem;">🔄</span>
+            <div style="flex:1;">
+              <div style="font-size:0.82rem; font-weight:700; color:var(--clr-text-muted); text-transform:uppercase; letter-spacing:0.3px; margin-bottom:2px;">الحساب التالي في التناوب</div>
+              <div id="rr-status" style="font-size:0.9rem; color:var(--clr-text); font-weight:600;">—</div>
+            </div>
+            <button id="reset-rr-btn" class="btn btn-secondary btn-sm" title="إعادة ضبط التناوب للبداية">↺ إعادة الضبط</button>
+          </div>
+
+          <div class="divider"></div>
+
+          <!-- ── Add New Account Form ── -->
+          <div style="margin-bottom:var(--sp-sm);">
+            <h3 style="font-size:0.88rem; font-weight:700; color:var(--clr-text-muted); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:var(--sp-md);">
+              ➕ إضافة حساب جديد
+            </h3>
           </div>
 
           <div class="alert alert-warning" style="margin-bottom:var(--sp-lg); font-size:0.82rem;">
             <span>⚠️</span>
             <div>
-              <strong>تحذير أمني هام (Security Warning):</strong><br/>
-              بما أن هذا النظام يعمل بالكامل من داخل متصفحك (Client-side)، يُنصح <strong>بشدة</strong> استخدام (الطريقة الأولى) وهي إنشاء <code>Upload Preset</code> من نوع <em>Unsigned</em> في إعدادات Cloudinary لفتح الرفع الآمن دون الحاجة لكلمات سر.<br/>
-              إدخال الـ <code>API Secret</code> هنا (الطريقة الثانية) يعني أنه سيُحفظ محلياً في متصفحك، وهو غير مستحسن لأغراض الإنتاج الفعلي.
+              <strong>تحذير أمني:</strong> يُنصح <strong>بشدة</strong> باستخدام <code>Upload Preset</code> من نوع <em>Unsigned</em> (الطريقة الأولى) بدلاً من إدخال الـ API Secret.
             </div>
           </div>
 
@@ -210,11 +232,11 @@
           </div>
 
           <div style="display:flex; gap:var(--sp-md); align-items:center; flex-wrap:wrap;">
-            <button id="save-cloudinary" class="btn btn-primary">
-              💾 حفظ إعدادات Cloudinary
+            <button id="add-account-btn" class="btn btn-primary">
+              ➕ إضافة الحساب
             </button>
             <span class="text-muted" style="font-size:0.8rem;">
-              سيتم رفع كافة بطاقات العضوية داخل مجلد سحابي باسم: <code dir="ltr" style="background:var(--clr-surface-2); padding:2px 6px; border-radius:4px;">cards/&lt;Member_ID&gt;.jpg</code>
+              سيتم رفع الكروت موزعةً بالتساوي على جميع الحسابات المضافة
             </span>
           </div>
 

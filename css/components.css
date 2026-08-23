@@ -679,3 +679,92 @@
   80%  { transform: scale(0.95); }
   100% { transform: scale(1); opacity: 1; }
 }
+
+/* ── Account Cards (Multi-Cloudinary) ── */
+.account-card {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-md);
+  background: var(--clr-surface-2);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-md) var(--sp-lg);
+  min-width: 220px;
+  flex: 1 1 220px;
+  max-width: 340px;
+  transition: var(--ease-fast);
+}
+
+.account-card:hover {
+  border-color: var(--clr-border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.account-card--active {
+  border-color: var(--clr-primary);
+  background: var(--clr-primary-glow);
+  box-shadow: 0 0 12px var(--clr-primary-glow);
+}
+
+.account-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-card-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--clr-text);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.account-card-method {
+  font-size: 0.78rem;
+  color: var(--clr-text-muted);
+}
+
+.account-card-method code {
+  background: var(--clr-surface-3);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.rr-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: var(--clr-primary);
+  color: white;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.3px;
+}
+
+.accounts-empty {
+  color: var(--clr-text-faint);
+  font-size: 0.85rem;
+  padding: var(--sp-sm);
+  font-style: italic;
+}
+
+/* ── Button Variants ── */
+.btn-sm {
+  font-size: 0.78rem;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+}
+
+.btn-danger {
+  background: var(--clr-error-bg);
+  color: var(--clr-error);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.btn-danger:hover {
+  background: var(--clr-error);
+  color: white;
+}

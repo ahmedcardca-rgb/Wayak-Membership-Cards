@@ -4,33 +4,69 @@
  */
 
 const STORAGE_KEYS = {
-  CLOUDINARY: 'mcg_cloudinary',
-  LAYOUT:     'mcg_layout',
-  FONT:       'mcg_font',
-  THEME:      'mcg_theme',
-  BATCH_SIZE: 'mcg_batch_size',
-  SHORTIO:    'mcg_shortio',
+  CLOUDINARY_ACCOUNTS: 'mcg_cloudinary_accounts', // Array of accounts (new)
+  CLOUDINARY_RR_INDEX: 'mcg_cloudinary_rr_index', // Round-robin index
+  CLOUDINARY:          'mcg_cloudinary',           // Legacy single-account key (for migration)
+  LAYOUT:              'mcg_layout',
+  FONT:                'mcg_font',
+  THEME:               'mcg_theme',
+  BATCH_SIZE:          'mcg_batch_size',
+  SHORTIO:             'mcg_shortio',
 };
 
 export const Storage = {
 
+  // ── Multi-Account Cloudinary ──────────────────────────────────────────
+
   /**
-   * Save Cloudinary credentials
-   * @param {{ cloudName: string, apiKey: string, apiSecret: string, uploadPreset: string }} data
+   * Save array of Cloudinary accounts.
+   * @param {Object[]} accounts
    */
-  saveCloudinary(data) {
-    localStorage.setItem(STORAGE_KEYS.CLOUDINARY, JSON.stringify(data));
+  saveCloudinaryAccounts(accounts) {
+    localStorage.setItem(STORAGE_KEYS.CLOUDINARY_ACCOUNTS, JSON.stringify(accounts));
   },
 
   /**
-   * Load Cloudinary credentials
-   * @returns {{ cloudName: string, apiKey: string, apiSecret: string, uploadPreset: string } | null}
+   * Load array of Cloudinary accounts.
+   * Auto-migrates from old single-account format if found.
+   * @returns {Object[]}
    */
-  loadCloudinary() {
+  loadCloudinaryAccounts() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEYS.CLOUDINARY);
-      return raw ? JSON.parse(raw) : null;
-    } catch { return null; }
+      // Try new format first
+      const raw = localStorage.getItem(STORAGE_KEYS.CLOUDINARY_ACCOUNTS);
+      if (raw) return JSON.parse(raw);
+
+      // ── Auto-migrate from legacy single-account format ──
+      const legacy = localStorage.getItem(STORAGE_KEYS.CLOUDINARY);
+      if (legacy) {
+        const parsed = JSON.parse(legacy);
+        if (parsed?.cloudName) {
+          const migrated = [parsed]; // Wrap in array
+          this.saveCloudinaryAccounts(migrated);
+          localStorage.removeItem(STORAGE_KEYS.CLOUDINARY); // Clean up old key
+          return migrated;
+        }
+      }
+    } catch { /* fall through */ }
+    return [];
+  },
+
+  /**
+   * Save the current round-robin index.
+   * @param {number} index
+   */
+  saveRoundRobinIndex(index) {
+    localStorage.setItem(STORAGE_KEYS.CLOUDINARY_RR_INDEX, String(index));
+  },
+
+  /**
+   * Load the persisted round-robin index.
+   * @returns {number}
+   */
+  loadRoundRobinIndex() {
+    const val = localStorage.getItem(STORAGE_KEYS.CLOUDINARY_RR_INDEX);
+    return val ? parseInt(val, 10) : 0;
   },
 
   /**

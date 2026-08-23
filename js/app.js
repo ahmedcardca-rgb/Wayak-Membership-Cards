@@ -10,6 +10,7 @@ import { Logger }                                               from './logger.j
 import { readExcel, writeExcel, detectColumns, downloadTemplateExcel }                 from './excel.js';
 import { loadImage, revokeImageUrl, drawPreview, DEFAULT_LAYOUT, DEFAULT_FONT } from './canvas.js';
 import { processAllCards }                                      from './processor.js';
+import { CloudinaryPool }                                       from './cloudinary-pool.js';
 import {
   showToast, updateProgress, updateCounter, startTimer, stopTimer,
   formatElapsed, appendLogEntry, clearLogUI, showSection, hideSection,
@@ -18,17 +19,17 @@ import {
 
 // ── App State ─────────────────────────────────────────────────────────
 const state = {
-  templateFile:    null,
-  templateImage:   null,
-  excelFile:       null,
-  excelData:       null,       // { headers, rows }
-  colMap:          null,       // { nameCol, memberCol, expiryCol }
-  cloudinaryCreds: null,
-  layout:          null,
-  font:            null,
-  isProcessing:    false,
-  abortController: null,
-  lastSummary:     null,
+  templateFile:       null,
+  templateImage:      null,
+  excelFile:          null,
+  excelData:          null,       // { headers, rows }
+  colMap:             null,       // { nameCol, memberCol, expiryCol }
+  cloudinaryAccounts: [],         // Array of Cloudinary credential objects
+  layout:             null,
+  font:               null,
+  isProcessing:       false,
+  abortController:    null,
+  lastSummary:        null,
 };
 
 const logger = new Logger();
@@ -55,16 +56,13 @@ function applyTheme(theme) {
 
 // ── Load Persisted Settings ───────────────────────────────────────────
 function loadPersistedSettings() {
-  // Cloudinary
-  const savedCreds = Storage.loadCloudinary();
-  if (savedCreds) {
-    state.cloudinaryCreds = savedCreds;
-    setVal('cloud-name',     savedCreds.cloudName    || '');
-    setVal('upload-preset',  savedCreds.uploadPreset || '');
-    setVal('api-key',        savedCreds.apiKey       || '');
-    setVal('api-secret',     savedCreds.apiSecret    || '');
-    setVal('custom-domain',  savedCreds.customDomain || '');
+  // Cloudinary Accounts (auto-migrates from old single-account format)
+  const savedAccounts = Storage.loadCloudinaryAccounts();
+  state.cloudinaryAccounts = savedAccounts;
+  renderAccountsList();
+  if (savedAccounts.length > 0) {
     showSavedBadge('cloudinary-saved-badge');
+    markStepDone(3);
   }
 
   // Layout
@@ -200,8 +198,9 @@ function bindEvents() {
   // ── Step 2: Excel Upload ──
   bindDropZone('excel-dropzone', 'excel-input', handleExcelFile);
 
-  // ── Step 3: Cloudinary Save ──
-  document.getElementById('save-cloudinary')?.addEventListener('click', saveCloudinarySettings);
+  // ── Step 3: Add Cloudinary Account ──
+  document.getElementById('add-account-btn')?.addEventListener('click', addCloudinaryAccount);
+  document.getElementById('reset-rr-btn')?.addEventListener('click', resetRoundRobin);
 
   // ── Step 3.5: Short.io Save ──
   document.getElementById('save-shortio')?.addEventListener('click', saveShortioSettings);
@@ -416,32 +415,129 @@ async function handleExcelFile(file) {
   }
 }
 
-// ── Save Cloudinary Settings ──────────────────────────────────────────
-function saveCloudinarySettings() {
-  const creds = {
-    cloudName:    getVal('cloud-name').trim(),
-    uploadPreset: getVal('upload-preset').trim(),
-    apiKey:       getVal('api-key').trim(),
-    apiSecret:    getVal('api-secret').trim(),
-    customDomain: getVal('custom-domain').trim(),
-  };
+// ── Cloudinary Multi-Account Management ──────────────────────────────
 
-  if (!creds.cloudName) {
-    showToast('Cloud Name is required', 'error');
+/**
+ * Add a new Cloudinary account from the form inputs.
+ */
+function addCloudinaryAccount() {
+  const cloudName    = getVal('cloud-name').trim();
+  const uploadPreset = getVal('upload-preset').trim();
+  const apiKey       = getVal('api-key').trim();
+  const apiSecret    = getVal('api-secret').trim();
+  const customDomain = getVal('custom-domain').trim();
+
+  if (!cloudName) {
+    showToast('Cloud Name مطلوب', 'error');
+    return;
+  }
+  if (!uploadPreset && (!apiKey || !apiSecret)) {
+    showToast('أدخل Upload Preset (الطريقة الأولى) أو API Key + Secret (الطريقة الثانية)', 'error');
     return;
   }
 
-  if (!creds.uploadPreset && (!creds.apiKey || !creds.apiSecret)) {
-    showToast('Provide either Upload Preset (unsigned) or API Key + Secret (signed)', 'error');
+  // Check for duplicate cloud names
+  if (state.cloudinaryAccounts.some(a => a.cloudName === cloudName)) {
+    showToast(`الحساب "${cloudName}" موجود بالفعل!`, 'error');
     return;
   }
 
-  state.cloudinaryCreds = creds;
-  Storage.saveCloudinary(creds);
+  const newAccount = { cloudName, uploadPreset, apiKey, apiSecret, customDomain };
+  state.cloudinaryAccounts.push(newAccount);
+  Storage.saveCloudinaryAccounts(state.cloudinaryAccounts);
+
+  // Clear form
+  setVal('cloud-name', '');
+  setVal('upload-preset', '');
+  setVal('api-key', '');
+  setVal('api-secret', '');
+  setVal('custom-domain', '');
+
+  renderAccountsList();
   markStepDone(3);
   showSavedBadge('cloudinary-saved-badge');
-  showToast('Cloudinary settings saved ✓', 'success');
+  showToast(`✅ تم إضافة حساب "${cloudName}" (${state.cloudinaryAccounts.length} حساب إجمالاً)`, 'success');
 }
+
+/**
+ * Remove a Cloudinary account by index.
+ * @param {number} index
+ */
+function removeCloudinaryAccount(index) {
+  const removed = state.cloudinaryAccounts[index];
+  state.cloudinaryAccounts.splice(index, 1);
+  Storage.saveCloudinaryAccounts(state.cloudinaryAccounts);
+
+  // Reset round-robin if the pool shrank
+  if (state.cloudinaryAccounts.length > 0) {
+    Storage.saveRoundRobinIndex(0);
+  }
+
+  renderAccountsList();
+  if (state.cloudinaryAccounts.length === 0) {
+    const badge = document.getElementById('cloudinary-saved-badge');
+    if (badge) badge.classList.add('hidden');
+  }
+  showToast(`🗑️ تم حذف حساب "${removed?.cloudName}"`, 'info');
+}
+
+/**
+ * Reset the round-robin index back to the first account.
+ */
+function resetRoundRobin() {
+  Storage.saveRoundRobinIndex(0);
+  renderAccountsList();
+  showToast('🔄 تم إعادة ضبط التناوب — سيبدأ من الحساب الأول', 'success');
+}
+
+/**
+ * Render the list of saved Cloudinary accounts in the UI.
+ */
+function renderAccountsList() {
+  const container = document.getElementById('accounts-list');
+  if (!container) return;
+
+  const accounts   = state.cloudinaryAccounts;
+  const rrIndex    = Storage.loadRoundRobinIndex() % Math.max(accounts.length, 1);
+  const countEl    = document.getElementById('accounts-count');
+  const rrStatus   = document.getElementById('rr-status');
+  const rrSection  = document.getElementById('rr-section');
+
+  if (countEl) countEl.textContent = accounts.length;
+
+  if (accounts.length === 0) {
+    container.innerHTML = `<div class="accounts-empty">لا توجد حسابات مضافة بعد. أضف حساباً من الأسفل ↓</div>`;
+    if (rrSection) rrSection.classList.add('hidden');
+    return;
+  }
+
+  if (rrSection) rrSection.classList.remove('hidden');
+  if (rrStatus) {
+    const nextAccount = accounts[rrIndex];
+    rrStatus.textContent = `الحساب ${rrIndex + 1} من ${accounts.length}: ${nextAccount?.cloudName}`;
+  }
+
+  container.innerHTML = accounts.map((acc, i) => `
+    <div class="account-card ${i === rrIndex ? 'account-card--active' : ''}">
+      <div class="account-card-info">
+        <div class="account-card-name">
+          ${i === rrIndex ? '🔄 ' : ''}☁️ <strong>${escapeHtml(acc.cloudName)}</strong>
+          ${i === rrIndex ? '<span class="rr-badge">التالي</span>' : ''}
+        </div>
+        <div class="account-card-method">
+          ${acc.uploadPreset
+            ? `Preset: <code>${escapeHtml(acc.uploadPreset)}</code>`
+            : `API Key: <code>${escapeHtml(acc.apiKey?.slice(0, 8))}…</code>`}
+          ${acc.customDomain ? ` · Domain: <code>${escapeHtml(acc.customDomain)}</code>` : ''}
+        </div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="window._removeAccount(${i})" title="حذف هذا الحساب">🗑️</button>
+    </div>
+  `).join('');
+}
+
+// Expose remove function to inline onclick handlers
+window._removeAccount = removeCloudinaryAccount;
 
 // ── Save Short.io Settings ────────────────────────────────────────────
 function saveShortioSettings() {
@@ -624,11 +720,12 @@ async function startGeneration() {
     shakeElement('step2-card');
     return;
   }
-  if (!state.cloudinaryCreds?.cloudName) {
-    showToast('⚠️ Please save Cloudinary settings first (Step 3)', 'error');
+  if (!state.cloudinaryAccounts?.length) {
+    showToast('⚠️ أضف حساب Cloudinary واحداً على الأقل (الخطوة ٣)', 'error');
     shakeElement('step3-card');
     return;
   }
+
   if (state.isProcessing) {
     showToast('Already processing — please wait', 'info');
     return;
@@ -670,7 +767,10 @@ async function startGeneration() {
   logger.info(`=== Generation Started at ${startTime.toLocaleString()} ===`);
   logger.info(`Total members: ${total}`);
   logger.info(`Batch size: ${Storage.loadBatchSize()}`);
-  logger.info(`Cloudinary: ${state.cloudinaryCreds.cloudName} / cards/<Member_ID>`);
+  logger.info(`Cloudinary Pool: ${state.cloudinaryAccounts.length} حساب (Round-Robin)`);
+  state.cloudinaryAccounts.forEach((acc, i) => {
+    logger.info(`  حساب ${i + 1}: ${acc.cloudName} (${acc.uploadPreset ? 'Unsigned Preset' : 'API Key'})`);
+  });
   
   if (state.shortioCreds && state.shortioCreds.apiKey && state.shortioCreds.domain) {
     logger.info(`Short.io: Active (Domain: ${state.shortioCreds.domain})`);
@@ -694,18 +794,25 @@ async function startGeneration() {
       }
     }
 
+    // ── Build CloudinaryPool with persisted round-robin index ──
+    const rrStartIndex = Storage.loadRoundRobinIndex();
+    const pool = new CloudinaryPool(state.cloudinaryAccounts, rrStartIndex);
+    pool.onAdvance(newIndex => {
+      Storage.saveRoundRobinIndex(newIndex);
+    });
+
     const { urlMap, stats } = await processAllCards({
-      template:        state.templateImage,
-      rows:            state.excelData.rows,
-      colMap:          state.colMap,
-      layout:          state.layout,
-      font:            state.font,
-      cloudinaryCreds: state.cloudinaryCreds,
-      shortioCreds:    state.shortioCreds,
+      template:       state.templateImage,
+      rows:           state.excelData.rows,
+      colMap:         state.colMap,
+      layout:         state.layout,
+      font:           state.font,
+      cloudinaryPool: pool,
+      shortioCreds:   state.shortioCreds,
       batchSize,
       exportMode,
-      canvas:          workCanvas,
-      signal:          state.abortController.signal,
+      canvas:         workCanvas,
+      signal:         state.abortController.signal,
       onProgress: (s) => {
         updateProgress(s.generated + s.failed, s.total);
         updateCounter('stat-generated', s.generated);
@@ -714,6 +821,10 @@ async function startGeneration() {
       },
       onLog: (level, msg, meta) => logger.log(level, msg, meta || {}),
     });
+
+    // Update the accounts list UI to reflect new rr index after processing
+    renderAccountsList();
+
 
     const elapsedMs = stopTimer();
     const endTime   = new Date();
