@@ -768,3 +768,53 @@
   background: var(--clr-error);
   color: white;
 }
+
+/* ── Usage Bar ── */
+.usage-bar-wrap {
+  margin-top: 8px;
+}
+
+.usage-bar-track {
+  height: 5px;
+  background: var(--clr-surface-3);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.usage-bar-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.4s ease;
+}
+
+.usage-bar-label {
+  font-size: 0.72rem;
+  color: var(--clr-text-muted);
+}
+
+/* ── Account Card Actions ── */
+.account-card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* ── Account Editing Highlight ── */
+.account-card--editing {
+  border-color: var(--clr-warning);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+/* ── WhatsApp Button ── */
+.btn-whatsapp {
+  background: #25D366;
+  color: white;
+  border: none;
+}
+
+.btn-whatsapp:hover {
+  background: #1ebe5d;
+  color: white;
+}

@@ -15,6 +15,7 @@ import { drawCard, canvasToBlob }         from './canvas.js';
 import { uploadToCloudinary, buildPublicId } from './cloudinary.js';
 import { yieldToBrowser }                  from './ui.js';
 import { shortenUrl }                      from './shortener.js';
+import { Storage }                         from './storage.js';
 
 /**
  * @typedef {Object} ProcessorOptions
@@ -156,17 +157,51 @@ export async function processAllCards(opts) {
             zip.file(`Card_${rowIndex + 1}_${safeName}.webp`, blob);
           }
 
+          // ── Smart Failover Upload ──
+          // Try each Cloudinary account in sequence until one succeeds.
+          const randomString = Math.random().toString(36).substring(2, 8);
+          const publicId = `cards/card_${rowIndex + 1}_${Date.now()}_${randomString}`;
+          const failedAccountIndices = new Set();
+          let url = null;
+          let lastUploadErr = null;
+
+
+          // First attempt: use the round-robin account
+          let { account: firstCreds, index: firstIdx } = (() => {
+            const idx = cloudinaryPool.currentIndex;
+            return { account: cloudinaryPool.getNext(), index: idx };
+          })();
+
           try {
-            // Generate a completely random and unique publicId
-            const randomString = Math.random().toString(36).substring(2, 8);
-            const publicId = `cards/card_${rowIndex + 1}_${Date.now()}_${randomString}`;
+            url = await uploadToCloudinary(blob, publicId, firstCreds, signal);
+          } catch (firstErr) {
+            if (signal?.aborted) throw firstErr;
+            lastUploadErr = firstErr;
+            failedAccountIndices.add(firstIdx);
+            onLog('WARN', `⚠️ الحساب "${firstCreds.cloudName}" فشل، جارٍ تجربة حساب آخر... (${firstErr.message})`);
 
-            // ── Round-Robin: pick the next Cloudinary account ──
-            const creds = cloudinaryPool.getNext();
-            onLog('INFO', `[حساب ${cloudinaryPool.currentIndex === 0 ? cloudinaryPool.size : cloudinaryPool.currentIndex}/${cloudinaryPool.size}] رفع: ${name || 'N/A'} (صف ${rowIndex + 1})`);
+            // Failover: try remaining accounts
+            let fallback;
+            while ((fallback = cloudinaryPool.getNextFallback(failedAccountIndices)) !== null) {
+              if (signal?.aborted) break;
+              try {
+                url = await uploadToCloudinary(blob, publicId, fallback.account, signal);
+                onLog('INFO', `✅ تم الرفع عبر الحساب البديل: "${fallback.account.cloudName}"`);
+                lastUploadErr = null;
+                break;
+              } catch (fbErr) {
+                if (signal?.aborted) throw fbErr;
+                lastUploadErr = fbErr;
+                failedAccountIndices.add(fallback.index);
+                onLog('WARN', `⚠️ الحساب البديل "${fallback.account.cloudName}" فشل أيضاً (${fbErr.message})`);
+              }
+            }
+          }
 
-            let url = await uploadToCloudinary(blob, publicId, creds, signal);
+          if (url) {
             stats.uploaded++;
+            // Track usage for the dashboard
+            Storage.trackUpload(firstCreds.cloudName, blob.size);
             onLog('SUCCESS', `Uploaded: ${name || 'N/A'} (Row ${rowIndex + 1}) → ${url}`, { member: name });
 
             // Shorten if configured
@@ -179,10 +214,12 @@ export async function processAllCards(opts) {
               }
             }
             urlMap.set(rowIndex, url);
-          } catch (upErr) {
+          } else {
+            // All accounts failed
             stats.failed++;
-            stats.errors.push({ member: name, rowIndex, reason: upErr.message });
-            onLog('ERROR', `Upload failed: ${name || 'N/A'} (Row ${rowIndex + 1}) — ${upErr.message}`);
+            const errMsg = lastUploadErr?.message || 'All Cloudinary accounts failed';
+            stats.errors.push({ member: name, rowIndex, reason: errMsg });
+            onLog('ERROR', `❌ فشل الرفع لكل الحسابات: ${name || 'N/A'} (صف ${rowIndex + 1}) — ${errMsg}`);
           }
 
           // Report progress after each card finishes uploading

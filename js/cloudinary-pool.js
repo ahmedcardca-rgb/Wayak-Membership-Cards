@@ -1,8 +1,10 @@
 ﻿/**
- * cloudinary-pool.js — Multi-account Cloudinary Pool with Round-Robin distribution
+ * cloudinary-pool.js — Multi-account Cloudinary Pool with Round-Robin + Smart Failover
  *
- * Manages a list of Cloudinary credential objects and cycles through them
- * sequentially to distribute uploads evenly across accounts.
+ * Features:
+ *  - Round-Robin distribution: cycles through accounts sequentially
+ *  - Smart Failover: if an account fails, automatically tries the next one
+ *  - Persists the round-robin index between sessions via onAdvance callback
  */
 
 export class CloudinaryPool {
@@ -41,6 +43,27 @@ export class CloudinaryPool {
     this._index   = (this._index + 1) % this._accounts.length;
     if (typeof this._onAdvance === 'function') this._onAdvance(this._index);
     return account;
+  }
+
+  /**
+   * Smart Failover: get the next account that is NOT in the failed set.
+   * Tries all accounts before giving up.
+   *
+   * @param {Set<number>} failedIndices - Set of account indices that already failed
+   * @returns {{ account: Object, index: number } | null} — null if all accounts failed
+   */
+  getNextFallback(failedIndices) {
+    const total = this._accounts.length;
+    for (let attempt = 0; attempt < total; attempt++) {
+      const candidateIndex = (this._index + attempt) % total;
+      if (!failedIndices.has(candidateIndex)) {
+        // Found a working candidate — advance index past it
+        this._index = (candidateIndex + 1) % total;
+        if (typeof this._onAdvance === 'function') this._onAdvance(this._index);
+        return { account: this._accounts[candidateIndex], index: candidateIndex };
+      }
+    }
+    return null; // All accounts failed
   }
 
   /** Peek at current account without advancing */

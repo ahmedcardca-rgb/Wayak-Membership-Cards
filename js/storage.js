@@ -69,6 +69,46 @@ export const Storage = {
     return val ? parseInt(val, 10) : 0;
   },
 
+  // ── Usage Tracking (local estimates) ─────────────────────────────────
+
+  /**
+   * Increment the upload counter for a specific cloudName.
+   * @param {string} cloudName
+   * @param {number} blobSizeBytes - size of the uploaded blob
+   */
+  trackUpload(cloudName, blobSizeBytes = 0) {
+    const raw = localStorage.getItem('mcg_usage') || '{}';
+    let usage = {};
+    try { usage = JSON.parse(raw); } catch { usage = {}; }
+    if (!usage[cloudName]) usage[cloudName] = { count: 0, bytes: 0 };
+    usage[cloudName].count += 1;
+    usage[cloudName].bytes += blobSizeBytes;
+    localStorage.setItem('mcg_usage', JSON.stringify(usage));
+  },
+
+  /**
+   * Load usage stats for all accounts.
+   * @returns {Object} — { [cloudName]: { count, bytes } }
+   */
+  loadUsage() {
+    try {
+      const raw = localStorage.getItem('mcg_usage');
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  },
+
+  /**
+   * Reset usage counter for a specific cloudName.
+   * @param {string} cloudName
+   */
+  resetUsage(cloudName) {
+    const raw = localStorage.getItem('mcg_usage') || '{}';
+    let usage = {};
+    try { usage = JSON.parse(raw); } catch { usage = {}; }
+    delete usage[cloudName];
+    localStorage.setItem('mcg_usage', JSON.stringify(usage));
+  },
+
   /**
    * Save card layout coordinates & styling
    * @param {Object} layout

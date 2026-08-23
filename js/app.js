@@ -30,6 +30,7 @@ const state = {
   isProcessing:       false,
   abortController:    null,
   lastSummary:        null,
+  _editingIndex:      -1,         // Index of account being edited (-1 = adding new)
 };
 
 const logger = new Logger();
@@ -201,6 +202,14 @@ function bindEvents() {
   // ── Step 3: Add Cloudinary Account ──
   document.getElementById('add-account-btn')?.addEventListener('click', addCloudinaryAccount);
   document.getElementById('reset-rr-btn')?.addEventListener('click', resetRoundRobin);
+  document.getElementById('cancel-edit-btn')?.addEventListener('click', cancelEditAccount);
+
+  // ── Export / Import Settings ──
+  document.getElementById('export-settings-btn')?.addEventListener('click', exportSettingsJSON);
+  document.getElementById('import-settings-input')?.addEventListener('change', importSettingsJSON);
+
+  // ── WhatsApp Share ──
+  document.getElementById('whatsapp-share-btn')?.addEventListener('click', openWhatsAppShare);
 
   // ── Step 3.5: Short.io Save ──
   document.getElementById('save-shortio')?.addEventListener('click', saveShortioSettings);
@@ -418,7 +427,7 @@ async function handleExcelFile(file) {
 // ── Cloudinary Multi-Account Management ──────────────────────────────
 
 /**
- * Add a new Cloudinary account from the form inputs.
+ * Add a new Cloudinary account from the form inputs (or update existing if in edit mode).
  */
 function addCloudinaryAccount() {
   const cloudName    = getVal('cloud-name').trim();
@@ -436,15 +445,31 @@ function addCloudinaryAccount() {
     return;
   }
 
-  // Check for duplicate cloud names
-  if (state.cloudinaryAccounts.some(a => a.cloudName === cloudName)) {
-    showToast(`الحساب "${cloudName}" موجود بالفعل!`, 'error');
-    return;
-  }
+  const editingIndex = state._editingIndex;
+  const updatedAccount = { cloudName, uploadPreset, apiKey, apiSecret, customDomain };
 
-  const newAccount = { cloudName, uploadPreset, apiKey, apiSecret, customDomain };
-  state.cloudinaryAccounts.push(newAccount);
-  Storage.saveCloudinaryAccounts(state.cloudinaryAccounts);
+  if (editingIndex >= 0) {
+    // ── Edit Mode: update existing account ──
+    state.cloudinaryAccounts[editingIndex] = updatedAccount;
+    Storage.saveCloudinaryAccounts(state.cloudinaryAccounts);
+    state._editingIndex = -1;
+
+    const addBtn = document.getElementById('add-account-btn');
+    if (addBtn) addBtn.innerHTML = '➕ إضافة الحساب';
+    const cancelBtn = document.getElementById('cancel-edit-btn');
+    if (cancelBtn) cancelBtn.classList.add('hidden');
+
+    showToast(`✅ تم تحديث حساب "${cloudName}" بنجاح`, 'success');
+  } else {
+    // ── Add Mode: check for duplicates ──
+    if (state.cloudinaryAccounts.some(a => a.cloudName === cloudName)) {
+      showToast(`الحساب "${cloudName}" موجود بالفعل! استخدم زر ✏️ للتعديل.`, 'error');
+      return;
+    }
+    state.cloudinaryAccounts.push(updatedAccount);
+    Storage.saveCloudinaryAccounts(state.cloudinaryAccounts);
+    showToast(`✅ تم إضافة حساب "${cloudName}" (${state.cloudinaryAccounts.length} حساب إجمالاً)`, 'success');
+  }
 
   // Clear form
   setVal('cloud-name', '');
@@ -456,7 +481,6 @@ function addCloudinaryAccount() {
   renderAccountsList();
   markStepDone(3);
   showSavedBadge('cloudinary-saved-badge');
-  showToast(`✅ تم إضافة حساب "${cloudName}" (${state.cloudinaryAccounts.length} حساب إجمالاً)`, 'success');
 }
 
 /**
@@ -492,6 +516,7 @@ function resetRoundRobin() {
 
 /**
  * Render the list of saved Cloudinary accounts in the UI.
+ * Shows usage stats, round-robin indicator, edit and delete buttons.
  */
 function renderAccountsList() {
   const container = document.getElementById('accounts-list');
@@ -499,6 +524,7 @@ function renderAccountsList() {
 
   const accounts   = state.cloudinaryAccounts;
   const rrIndex    = Storage.loadRoundRobinIndex() % Math.max(accounts.length, 1);
+  const usage      = Storage.loadUsage();
   const countEl    = document.getElementById('accounts-count');
   const rrStatus   = document.getElementById('rr-status');
   const rrSection  = document.getElementById('rr-section');
@@ -517,12 +543,23 @@ function renderAccountsList() {
     rrStatus.textContent = `الحساب ${rrIndex + 1} من ${accounts.length}: ${nextAccount?.cloudName}`;
   }
 
-  container.innerHTML = accounts.map((acc, i) => `
-    <div class="account-card ${i === rrIndex ? 'account-card--active' : ''}">
+  // Free tier limits: 25 GB bandwidth / month ≈ 25,000 MB
+  const FREE_LIMIT_MB = 25000;
+
+  container.innerHTML = accounts.map((acc, i) => {
+    const u = usage[acc.cloudName] || { count: 0, bytes: 0 };
+    const usedMB = (u.bytes / (1024 * 1024)).toFixed(1);
+    const pct    = Math.min(100, (u.bytes / (FREE_LIMIT_MB * 1024 * 1024)) * 100).toFixed(1);
+    const barColor = pct > 80 ? 'var(--clr-error)' : pct > 50 ? 'var(--clr-warning)' : 'var(--clr-primary)';
+    const isEditing = state._editingIndex === i;
+
+    return `
+    <div class="account-card ${i === rrIndex ? 'account-card--active' : ''} ${isEditing ? 'account-card--editing' : ''}">
       <div class="account-card-info">
         <div class="account-card-name">
           ${i === rrIndex ? '🔄 ' : ''}☁️ <strong>${escapeHtml(acc.cloudName)}</strong>
           ${i === rrIndex ? '<span class="rr-badge">التالي</span>' : ''}
+          ${pct > 80 ? '<span class="rr-badge" style="background:var(--clr-error);">⚠️ قارب الحد</span>' : ''}
         </div>
         <div class="account-card-method">
           ${acc.uploadPreset
@@ -530,14 +567,225 @@ function renderAccountsList() {
             : `API Key: <code>${escapeHtml(acc.apiKey?.slice(0, 8))}…</code>`}
           ${acc.customDomain ? ` · Domain: <code>${escapeHtml(acc.customDomain)}</code>` : ''}
         </div>
+        <!-- Usage Bar -->
+        <div class="usage-bar-wrap" title="${u.count} صورة · ${usedMB} MB من ${FREE_LIMIT_MB} MB">
+          <div class="usage-bar-track">
+            <div class="usage-bar-fill" style="width:${pct}%; background:${barColor};"></div>
+          </div>
+          <span class="usage-bar-label">${u.count} صورة · ${usedMB} MB (${pct}%)</span>
+        </div>
       </div>
-      <button class="btn btn-danger btn-sm" onclick="window._removeAccount(${i})" title="حذف هذا الحساب">🗑️</button>
+      <div class="account-card-actions">
+        <button class="btn btn-secondary btn-sm" onclick="window._editAccount(${i})" title="تعديل هذا الحساب">✏️</button>
+        <button class="btn btn-secondary btn-sm" onclick="window._resetUsage('${escapeHtml(acc.cloudName)}')" title="إعادة ضبط عداد الاستخدام">↺</button>
+        <button class="btn btn-danger btn-sm" onclick="window._removeAccount(${i})" title="حذف هذا الحساب">🗑️</button>
+      </div>
     </div>
-  `).join('');
+  `}).join('');
 }
 
-// Expose remove function to inline onclick handlers
+// Expose functions to inline onclick handlers
 window._removeAccount = removeCloudinaryAccount;
+window._editAccount   = editCloudinaryAccount;
+window._resetUsage    = (cloudName) => {
+  Storage.resetUsage(cloudName);
+  renderAccountsList();
+  showToast(`↺ تم إعادة ضبط عداد "${cloudName}"`, 'info');
+};
+
+// ── Edit Account ──────────────────────────────────────────────────────
+
+/**
+ * Pre-fill the add-account form with an existing account's data for editing.
+ * @param {number} index
+ */
+function editCloudinaryAccount(index) {
+  const acc = state.cloudinaryAccounts[index];
+  if (!acc) return;
+
+  state._editingIndex = index;
+
+  // Pre-fill form
+  setVal('cloud-name',    acc.cloudName    || '');
+  setVal('upload-preset', acc.uploadPreset || '');
+  setVal('api-key',       acc.apiKey       || '');
+  setVal('api-secret',    acc.apiSecret    || '');
+  setVal('custom-domain', acc.customDomain || '');
+
+  // Update button label
+  const addBtn = document.getElementById('add-account-btn');
+  if (addBtn) addBtn.innerHTML = '💾 حفظ التعديلات';
+
+  const cancelBtn = document.getElementById('cancel-edit-btn');
+  if (cancelBtn) cancelBtn.classList.remove('hidden');
+
+  // Scroll form into view
+  document.getElementById('cloud-name')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  document.getElementById('cloud-name')?.focus();
+
+  renderAccountsList();
+  showToast(`✏️ تعديل حساب "${acc.cloudName}"`, 'info');
+}
+
+/**
+ * Cancel edit mode and reset form.
+ */
+function cancelEditAccount() {
+  state._editingIndex = -1;
+  setVal('cloud-name', '');
+  setVal('upload-preset', '');
+  setVal('api-key', '');
+  setVal('api-secret', '');
+  setVal('custom-domain', '');
+
+  const addBtn = document.getElementById('add-account-btn');
+  if (addBtn) addBtn.innerHTML = '➕ إضافة الحساب';
+
+  const cancelBtn = document.getElementById('cancel-edit-btn');
+  if (cancelBtn) cancelBtn.classList.add('hidden');
+
+  renderAccountsList();
+}
+
+// ── Export / Import Settings JSON ─────────────────────────────────────
+
+/**
+ * Export all app settings as a downloadable JSON file.
+ */
+function exportSettingsJSON() {
+  const data = {
+    _version:           '1.0',
+    _exportedAt:        new Date().toISOString(),
+    cloudinaryAccounts: state.cloudinaryAccounts,
+    layout:             state.layout,
+    font:               state.font,
+    batchSize:          Storage.loadBatchSize(),
+    shortio:            Storage.loadShortio(),
+    rrIndex:            Storage.loadRoundRobinIndex(),
+  };
+
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `wayak-settings-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('📤 تم تصدير الإعدادات بنجاح', 'success');
+}
+
+/**
+ * Import settings from a JSON file and restore all configuration.
+ * @param {Event} e - file input change event
+ */
+function importSettingsJSON(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+
+      // Restore accounts
+      if (Array.isArray(data.cloudinaryAccounts)) {
+        state.cloudinaryAccounts = data.cloudinaryAccounts;
+        Storage.saveCloudinaryAccounts(data.cloudinaryAccounts);
+        renderAccountsList();
+        if (data.cloudinaryAccounts.length > 0) {
+          markStepDone(3);
+          showSavedBadge('cloudinary-saved-badge');
+        }
+      }
+
+      // Restore layout
+      if (data.layout) {
+        state.layout = data.layout;
+        Storage.saveLayout(data.layout);
+        populateLayoutFields(data.layout);
+      }
+
+      // Restore font
+      if (data.font) {
+        state.font = data.font;
+        Storage.saveFont(data.font);
+        populateFontFields(data.font);
+      }
+
+      // Restore batch size
+      if (data.batchSize) {
+        Storage.saveBatchSize(data.batchSize);
+        setVal('batch-size', data.batchSize);
+      }
+
+      // Restore Short.io
+      if (data.shortio?.apiKey) {
+        state.shortioCreds = data.shortio;
+        Storage.saveShortio(data.shortio);
+        setVal('shortio-key',    data.shortio.apiKey || '');
+        setVal('shortio-domain', data.shortio.domain || '');
+        showSavedBadge('shortio-saved-badge');
+      }
+
+      // Restore RR index
+      if (typeof data.rrIndex === 'number') {
+        Storage.saveRoundRobinIndex(data.rrIndex);
+      }
+
+      showToast(`✅ تم استيراد الإعدادات بنجاح (${data.cloudinaryAccounts?.length || 0} حساب)`, 'success');
+      updatePreview();
+    } catch (err) {
+      showToast(`❌ ملف الإعدادات غير صالح: ${err.message}`, 'error');
+    }
+    // Reset file input so user can import again
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// ── WhatsApp Share ─────────────────────────────────────────────────────
+
+/**
+ * Open a WhatsApp share dialog after generation.
+ * Builds a message template based on the first few generated cards.
+ */
+function openWhatsAppShare() {
+  const summary = state.lastSummary;
+  if (!summary || !summary.urlMap || summary.urlMap.size === 0) {
+    showToast('لا توجد كروت لمشاركتها. قم بتوليد الكروت أولاً.', 'error');
+    return;
+  }
+
+  const rows    = state.excelData?.rows || [];
+  const colMap  = state.colMap;
+  const urlMap  = summary.urlMap;
+
+  // Show a modal-like prompt to pick how many to send as sample
+  const sampleText = [...urlMap.entries()].slice(0, 5).map(([rowIdx, url]) => {
+    const row  = rows[rowIdx] || {};
+    const name = String(row[colMap?.nameCol] || 'العميل').trim();
+    return `مرحباً ${name} 🎉\nبطاقة عضويتك في Wayak جاهزة:\n🔗 ${url}`;
+  }).join('\n\n---\n\n');
+
+  // Show modal with the message
+  const modal = document.getElementById('whatsapp-modal');
+  const textarea = document.getElementById('whatsapp-text');
+  if (modal && textarea) {
+    textarea.value = sampleText;
+    modal.classList.remove('hidden');
+  } else {
+    // Fallback: open wa.me with first card
+    const firstEntry = [...urlMap.entries()][0];
+    if (firstEntry) {
+      const [rowIdx, url] = firstEntry;
+      const row  = rows[rowIdx] || {};
+      const name = String(row[colMap?.nameCol] || 'العميل').trim();
+      const msg  = encodeURIComponent(`مرحباً ${name} 🎉\nبطاقة عضويتك في Wayak جاهزة:\n🔗 ${url}`);
+      window.open(`https://wa.me/?text=${msg}`, '_blank');
+    }
+  }
+}
 
 // ── Save Short.io Settings ────────────────────────────────────────────
 function saveShortioSettings() {
