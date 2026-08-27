@@ -4,34 +4,9 @@
  * Falls back to signed upload if credentials are provided.
  */
 
-const CLOUDINARY_BASE = 'https://api.cloudinary.com/v1_1';
+import { fetchWithRetry, sanitizeDomain } from './utils.js';
 
-/**
- * Fetch with exponential backoff retry logic.
- * Retries on network errors or 429/5xx status codes.
- */
-async function fetchWithRetry(url, options, maxRetries = 3) {
-  let attempt = 0;
-  while (attempt < maxRetries) {
-    try {
-      const response = await fetch(url, options);
-      // If 429 Too Many Requests or 5xx Server Error, we should retry
-      if (!response.ok && (response.status === 429 || response.status >= 500)) {
-        throw new Error(`HTTP ${response.status}`); // Caught below to trigger retry
-      }
-      return response; // Success or 4xx (non-retriable)
-    } catch (err) {
-      if (options.signal?.aborted) throw err; // Don't retry if aborted
-      attempt++;
-      if (attempt >= maxRetries) {
-        throw err; // Out of retries
-      }
-      // Exponential backoff: 1s, 2s, 4s...
-      const delayMs = Math.pow(2, attempt - 1) * 1000 + (Math.random() * 500);
-      await new Promise(r => setTimeout(r, delayMs));
-    }
-  }
-}
+const CLOUDINARY_BASE = 'https://api.cloudinary.com/v1_1';
 
 /**
  * Upload a Blob to Cloudinary.
@@ -94,9 +69,7 @@ export async function uploadToCloudinary(blob, publicId, creds, signal) {
 
     // Apply custom domain if provided
     if (creds.customDomain) {
-      let cleanDomain = creds.customDomain.trim();
-      cleanDomain = cleanDomain.replace(/^(https?:\/\/)?(www\.)?/, ''); // remove http://, https://, www.
-      cleanDomain = cleanDomain.replace(/\/+$/, ''); // remove trailing slashes
+      const cleanDomain = sanitizeDomain(creds.customDomain);
       finalUrl = `https://${cleanDomain}/cards/${publicId.split('/').pop()}.webp`;
     }
   }
@@ -123,19 +96,4 @@ async function generateSignature(params, apiSecret) {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-/**
- * Build the Cloudinary public_id for a member card.
- * Result: "cards/<memberId>" (no extension — Cloudinary handles that)
- * @param {string} memberId
- * @returns {string}
- */
-export function buildPublicId(memberId) {
-  // Sanitize: replace spaces and special chars
-  const safe = String(memberId)
-    .trim()
-    .replace(/[^\w\u0600-\u06FF\-\.]/g, '_');
-  
-  // Append a unique timestamp to force a fresh upload and new link every time
-  // This satisfies the requirement to always generate a new URL even for duplicate Member IDs.
-  return `cards/${safe}_${Date.now()}`;
-}
+

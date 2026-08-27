@@ -656,6 +656,7 @@ function exportSettingsJSON() {
   const data = {
     _version:           '1.0',
     _exportedAt:        new Date().toISOString(),
+    _warning:           'هذا الملف يحتوي على بيانات حساسة (API Keys). لا تشاركه مع أحد أو ترفعه على الإنترنت.',
     cloudinaryAccounts: state.cloudinaryAccounts,
     layout:             state.layout,
     font:               state.font,
@@ -782,7 +783,7 @@ function openWhatsAppShare() {
       const row  = rows[rowIdx] || {};
       const name = String(row[colMap?.nameCol] || 'العميل').trim();
       const msg  = encodeURIComponent(`مرحباً ${name} 🎉\nبطاقة عضويتك في Wayak جاهزة:\n🔗 ${url}`);
-      window.open(`https://wa.me/?text=${msg}`, '_blank');
+      window.open(`https://wa.me/?text=${msg}`, '_blank', 'noopener,noreferrer');
     }
   }
 }
@@ -1118,8 +1119,7 @@ async function startGeneration() {
     state.isProcessing = false;
     const genBtnFinal    = document.getElementById('generate-btn');
     const cancelBtnFinal = document.getElementById('cancel-btn');
-    setButtonLoading(genBtnFinal, false);
-    if (genBtnFinal) genBtnFinal.innerHTML = '🚀 Generate Cards';
+    setButtonLoading(genBtnFinal, false); // restores original HTML from btn._originalHTML
     if (cancelBtnFinal) cancelBtnFinal.classList.add('hidden');
   }
 }

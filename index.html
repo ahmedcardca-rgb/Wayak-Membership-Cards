@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cairo:wght@300;400;500;600;700;800&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
 
   <!-- SheetJS (Excel) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <!-- JSZip & FileSaver -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
@@ -673,7 +673,7 @@
             <button onclick="navigator.clipboard.writeText(document.getElementById('whatsapp-text').value).then(()=>window.showToast?.('✅ تم نسخ الرسائل!','success'))" class="btn btn-primary" style="flex:1;">
               📋 نسخ الكل
             </button>
-            <button onclick="const t=document.getElementById('whatsapp-text').value; const first=t.split('---')[0].trim(); window.open('https://wa.me/?text='+encodeURIComponent(first),'_blank')" class="btn btn-whatsapp" style="flex:1;">
+            <button onclick="const t=document.getElementById('whatsapp-text').value; const first=t.split('---')[0].trim(); window.open('https://wa.me/?text='+encodeURIComponent(first),'_blank','noopener,noreferrer')" class="btn btn-whatsapp" style="flex:1;">
               💬 فتح واتساب (أول عميل)
             </button>
             <button onclick="document.getElementById('whatsapp-modal').classList.add('hidden')" class="btn btn-secondary">

@@ -12,7 +12,7 @@
  */
 
 import { drawCard, canvasToBlob }         from './canvas.js';
-import { uploadToCloudinary, buildPublicId } from './cloudinary.js';
+import { uploadToCloudinary }              from './cloudinary.js';
 import { yieldToBrowser }                  from './ui.js';
 import { shortenUrl }                      from './shortener.js';
 import { Storage }                         from './storage.js';
@@ -172,6 +172,9 @@ export async function processAllCards(opts) {
             return { account: cloudinaryPool.getNext(), index: idx };
           })();
 
+          // actualCreds tracks whichever account ultimately succeeded
+          let actualCreds = firstCreds;
+
           try {
             url = await uploadToCloudinary(blob, publicId, firstCreds, signal);
           } catch (firstErr) {
@@ -186,6 +189,7 @@ export async function processAllCards(opts) {
               if (signal?.aborted) break;
               try {
                 url = await uploadToCloudinary(blob, publicId, fallback.account, signal);
+                actualCreds = fallback.account; // ← credit the account that actually worked
                 onLog('INFO', `✅ تم الرفع عبر الحساب البديل: "${fallback.account.cloudName}"`);
                 lastUploadErr = null;
                 break;
@@ -200,8 +204,8 @@ export async function processAllCards(opts) {
 
           if (url) {
             stats.uploaded++;
-            // Track usage for the dashboard
-            Storage.trackUpload(firstCreds.cloudName, blob.size);
+            // Track usage against the account that actually completed the upload
+            Storage.trackUpload(actualCreds.cloudName, blob.size);
             onLog('SUCCESS', `Uploaded: ${name || 'N/A'} (Row ${rowIndex + 1}) → ${url}`, { member: name });
 
             // Shorten if configured

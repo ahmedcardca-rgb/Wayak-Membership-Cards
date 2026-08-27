@@ -100,9 +100,6 @@ export function stopTimer() {
   return _startTime ? (Date.now() - _startTime) : 0;
 }
 
-export function getElapsed() {
-  return _startTime ? (Date.now() - _startTime) : 0;
-}
 
 /**
  * Format elapsed milliseconds as MM:SS or HH:MM:SS
